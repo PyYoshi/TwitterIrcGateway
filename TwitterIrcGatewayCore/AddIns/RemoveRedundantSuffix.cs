@@ -50,7 +50,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                 }
                 if (!String.IsNullOrEmpty(suffix))
                 {
-                    Trace.WriteLine("Remove Redundant suffix: " + suffix);
+                    Debug.WriteLine("Remove Redundant suffix: " + suffix);
                     e.Text = e.Text.Substring(0, e.Text.Length - suffix.Length);
                 }
             }

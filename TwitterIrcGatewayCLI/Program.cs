@@ -70,10 +70,12 @@ namespace TwitterIrcGatewayCLI
             Config.Default.ClientMessageWait = options.ClientMessageWait;
             Config.Default.BroadcastUpdateMessageIsNotice = options.BroadcastUpdateMessageIsNotice;
             Config.Default.POSTFetchMode = options.PostFetchMode;
+            Config.Default.EnableCompression = options.EnableCompression;
+            Config.Default.DisableNoticeAtFirstTime = options.DisableNoticeAtFirstTime;
 
             Server _server = new Server();
             _server.Encoding = encoding;
-            _server.SessionStartedReceived += new EventHandler<SessionStartedEventArgs>(_server_SessionStartedReceived);
+            _server.ConnectionAttached += new EventHandler<ConnectionAttachEventArgs>(_server_ConnectionAttached);
             _server.Proxy = proxy;
 
             Console.WriteLine("Start TwitterIrcGateway Server v{0}", typeof(Server).Assembly.GetName().Version);
@@ -96,6 +98,8 @@ namespace TwitterIrcGatewayCLI
             Console.WriteLine("[Configuration] BroadcastUpdateMessageIsNotice: {0}", Config.Default.BroadcastUpdateMessageIsNotice);
             Console.WriteLine("[Configuration] Proxy: {0}", options.Proxy);
             Console.WriteLine("[Configuration] PostFetchMode: {0}", options.PostFetchMode);
+            Console.WriteLine("[Configuration] EnableCompression: {0}", options.EnableCompression);
+            Console.WriteLine("[Configuration] DisableNoticeAtFirstTime: {0}", options.DisableNoticeAtFirstTime);
 
             _server.Start(bindAddress, options.Port);
 
@@ -103,16 +107,15 @@ namespace TwitterIrcGatewayCLI
                 Thread.Sleep(1000);
         }
 
+        static void _server_ConnectionAttached(object sender, ConnectionAttachEventArgs e)
+        {
+        }
+
         private static void ShowUsage() 
         {
             Console.WriteLine("TwitterIrcGateway Server v{0}", typeof(Server).Assembly.GetName().Version);
             Console.WriteLine(@"Usage:");
             CommandLineParser.ShowHelp();
-        }
-
-        static void _server_SessionStartedReceived(object sender, SessionStartedEventArgs e)
-        {
-            //Console.WriteLine("[Connect] User: {0}", e.UserName);
         }
     }
 
@@ -197,5 +200,13 @@ namespace TwitterIrcGatewayCLI
         [DefaultValue(false)]
         [Description("fetch data by POST method")]
         public Boolean PostFetchMode { get; set; }
+
+        [DefaultValue(false)]
+        [Description("Use gzip compression at Web request")]
+        public Boolean EnableCompression { get; set; }
+
+        [DefaultValue(false)]
+        [Description("Disable using NOTICE at first time")]
+        public Boolean DisableNoticeAtFirstTime { get; set; }
     }
 }

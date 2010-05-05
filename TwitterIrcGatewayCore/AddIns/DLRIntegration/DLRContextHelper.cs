@@ -37,57 +37,84 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
         /// <returns></returns>
         public static Type Wrap(Session session, String contextName, Object dlrContextType)
         {
-            Type type = _modBuilder.GetType(contextName);
-            if (type == null)
+            lock (_asmName)
             {
-                TypeBuilder typeBuilder = _modBuilder.DefineType(contextName);
-                type = typeBuilder.CreateType();
+                Type type = _modBuilder.GetType(contextName);
+                if (type == null)
+                {
+                    TypeBuilder typeBuilder = _modBuilder.DefineType(contextName);
+                    type = typeBuilder.CreateType();
+                }
+                Type genCtxType = typeof (DLRContextBase<>).MakeGenericType(type);
+                return
+                    genCtxType.InvokeMember("GetProxyType",
+                                            BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod,
+                                            null, null, new Object[] {session, contextName, dlrContextType}) as Type;
             }
-            Type genCtxType = typeof(DLRContextBase<>).MakeGenericType(type);
-            return genCtxType.InvokeMember("GetProxyType", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod, null, null, new Object[] { session, contextName, dlrContextType}) as Type;
         }
     }
-    
     /// <summary>
     /// DLRで利用できる設定クラスです。
     /// </summary>
     public class DLRBasicConfiguration : ICustomConfiguration
     {
         private DLRConfigurationStore _configurationStore;
-        private List<ConfigurationPropertyInfo> _configurationPropInfoList;
+        private Dictionary<String, ConfigurationPropertyInfo> _configurationPropInfoList;
         private String _configStoreName;
         private Session _session;
-        
+
         public DLRBasicConfiguration() { }
 
         public DLRBasicConfiguration(Session session, String configStoreName, IDictionary<String, String> configEntries)
         {
             _session = session;
-            _configurationPropInfoList = new List<ConfigurationPropertyInfo>();
+            _configurationPropInfoList = new Dictionary<String, ConfigurationPropertyInfo>(StringComparer.InvariantCultureIgnoreCase);
             _configStoreName = configStoreName;
             _configurationStore = _session.AddInManager.GetConfig<DLRConfigurationStore>();
 
             foreach (var kv in configEntries)
             {
-                _configurationPropInfoList.Add(new ConfigurationPropertyInfo{ Description = kv.Value, Name = kv.Key, Type = typeof(String) });
+                _configurationPropInfoList.Add(kv.Key, new ConfigurationPropertyInfo { Description = kv.Value, Name = kv.Key, Type = typeof(String) });
             }
         }
 
+        public DLRBasicConfiguration(Session session, String configStoreName, ICollection<ConfigurationPropertyInfo> configEntries)
+        {
+            _session = session;
+            _configurationPropInfoList = new Dictionary<String, ConfigurationPropertyInfo>(StringComparer.InvariantCultureIgnoreCase);
+            _configStoreName = configStoreName;
+            _configurationStore = _session.AddInManager.GetConfig<DLRConfigurationStore>();
+
+            foreach (ConfigurationPropertyInfo configPropInfo in configEntries)
+                _configurationPropInfoList.Add(configPropInfo.Name, configPropInfo);
+        }
         #region ICustomConfiguration メンバ
         public ICollection<ConfigurationPropertyInfo> GetConfigurationPropertyInfo()
         {
-            return _configurationPropInfoList;
+            return _configurationPropInfoList.Values;
         }
 
         public void SetValue(string name, object value)
         {
-            _configurationStore.SetValue(_configStoreName, name, value.ToString());
+            _configurationStore.SetValue(_configStoreName, name, ((value == null) ? null : value.ToString()));
             _session.AddInManager.SaveConfig(_configurationStore);
         }
 
         public object GetValue(string name)
         {
-            return _configurationStore.GetValue(_configStoreName, name);
+            ConfigurationPropertyInfo configPropInfo;
+            if (!_configurationPropInfoList.TryGetValue(name, out configPropInfo))
+                return null;
+
+            TypeConverter tConv = TypeDescriptor.GetConverter(configPropInfo.Type);
+            if (!tConv.CanConvertFrom(typeof(String)))
+                return configPropInfo.DefaultValue;
+
+            String value = _configurationStore.GetValue(_configStoreName, name);
+            if (String.IsNullOrEmpty(value))
+                return configPropInfo.DefaultValue;
+
+            return tConv.ConvertFromString(value);
         }
         #endregion
     }
@@ -115,15 +142,18 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
                     String[] parts = line.Split(new char[] {'\t'}, 3);
                     if (parts.Length != 3)
                     {
-                        Trace.WriteLine("Invalid configuration line:");
-                        Trace.WriteLine(line);
+                        Trace.TraceWarning("Invalid configuration line:");
+                        Trace.TraceWarning(line);
                         continue;
                     }
                     
                     if (!_contentDict.ContainsKey(parts[0]))
                         _contentDict[parts[0]] = new Dictionary<string, string>();
 
-                    _contentDict[parts[0]][parts[1]] = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[2]));
+                    if (parts[2] == "(null)")
+                        _contentDict[parts[0]][parts[1]] = null;
+                    else
+                        _contentDict[parts[0]][parts[1]] = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[2]));
                 }
             }
         }
@@ -135,7 +165,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
                 foreach (var keyValue in valueByStore.Value)
                 {
                     stringWriter.WriteLine("{0}\t{1}\t{2}", valueByStore.Key, keyValue.Key,
-                                           Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(keyValue.Value)));
+                        ((keyValue.Value == null) ? "(null)" : Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(keyValue.Value))));
                 }
             }
             Content = stringWriter.ToString();
@@ -256,6 +286,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
             var commands =_site.GetCommands();
             // いくつか削除する
             commands.Remove("OnConfigurationChanged");
+            commands.Remove("OnConfigurationBeforeChange");
             commands.Remove("Equals");
             commands.Remove("MemberwiseClone");
             commands.Remove("ToString");

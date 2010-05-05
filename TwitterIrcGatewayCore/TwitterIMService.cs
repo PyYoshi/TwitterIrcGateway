@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if ENABLE_IM_SUPPORT
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
@@ -187,3 +188,4 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         #endregion
     }
 }
+#endif

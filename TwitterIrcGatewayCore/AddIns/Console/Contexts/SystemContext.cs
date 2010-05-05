@@ -77,13 +77,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
             }
             Console.NotifyMessage(String.Format("アドイン \"{0}\" は読み込まれていません。", addInName));
         }
-
+#if FALSE
         [Description("アドインを再読込します")]
         public void ReloadAddIns()
         {
             CurrentSession.AddInManager.RestartAddIns();
         }
-
+#endif
         [Description("バージョン情報を表示します")]
         public void Version()
         {

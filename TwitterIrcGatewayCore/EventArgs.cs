@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using Misuzilla.Net.Irc;
 
@@ -40,11 +41,32 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// 接続してきたユーザの名前を取得します。
         /// </summary>
-        public String UserName;
-        public SessionStartedEventArgs(String userName)
+        public String UserName { get; set; }
+        /// <summary>
+        /// Twitterのユーザを取得します。
+        /// </summary>
+        public User User { get; set; }
+        /// <summary>
+        /// 接続してきたユーザのエンドポイントを取得します。
+        /// </summary>
+        public IPEndPoint EndPoint { get; set; }
+        public SessionStartedEventArgs(String userName, User user, IPEndPoint endPoint)
         {
             UserName = userName;
+            User = user;
+            EndPoint = endPoint;
         }
+    }
+    
+    /// <summary>
+    /// 接続をセッションにアタッチしたイベントのデータを提供します
+    /// </summary>
+    public class ConnectionAttachEventArgs : EventArgs
+    {
+        /// <summary>
+        /// 新たにアタッチされた接続
+        /// </summary>
+        public ConnectionBase Connection { get; set; }
     }
 
     /// <summary>

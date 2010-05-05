@@ -20,6 +20,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
         public Filters()
         {
             _items = new List<FilterItem>();
+            _Counter.Increment(ref _Counter.Filters);
+        }
+        ~Filters()
+        {
+            _Counter.Decrement(ref _Counter.Filters);
         }
         
         private static Object _syncObject = new object();
@@ -71,7 +76,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
         /// <returns>メッセージを捨てるかどうか</returns>
         public Boolean ExecuteFilters(FilterArgs args)
         {
-            Trace.WriteLine(String.Format("Filter: User: {0} / Message: {1}",args.User.ScreenName, args.Content.Replace('\n', ' ')));
+            TraceLogger.Filter.Information(String.Format("Filter: User: {0} / Message: {1}",args.User.ScreenName, args.Content.Replace('\n', ' ')));
             Trace.Indent();
             try
             {
@@ -86,13 +91,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                         Boolean executed = item.Execute(args);
                         if (args.Drop)
                         {
-                            Trace.WriteLine(String.Format("=> Drop", item.GetType().Name, args.User.ScreenName,
+                            TraceLogger.Filter.Information(String.Format("=> Drop", item.GetType().Name, args.User.ScreenName,
                                                           args.Content.Replace('\n', ' ')));
                             return false;
                         }
                         else if (executed)
                         {
-                            Trace.WriteLine(String.Format("=> Execute Result: Filter: {0} / User: {1} / Message: {2}",
+                            TraceLogger.Filter.Information(String.Format("=> Execute Result: Filter: {0} / User: {1} / Message: {2}",
                                                           item.GetType().Name,
                                                           args.User.ScreenName, args.Content.Replace('\n', ' ')));
                         }
@@ -120,7 +125,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
         {
             if (File.Exists(path))
             {
-                Trace.WriteLine(String.Format("Load Filters: {0}", path));
+                TraceLogger.Filter.Information(String.Format("Load Filters: {0}", path));
                 try
                 {
                     using (FileStream fs = new FileStream(path, FileMode.Open))
@@ -132,18 +137,18 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                             {
                                 foreach (FilterItem item in filters.Items)
                                 {
-                                    Trace.WriteLine(String.Format(" - Filter:{0}", item.ToString()));
+                                    TraceLogger.Filter.Information(String.Format(" - Filter:{0}", item.ToString()));
                                 }
                                 return filters;
                             }
                         }
-                        catch (XmlException xe) { Trace.WriteLine(xe.Message); }
-                        catch (InvalidOperationException ioe) { Trace.WriteLine(ioe.Message); }
+                        catch (XmlException xe) { TraceLogger.Filter.Information(xe.Message); }
+                        catch (InvalidOperationException ioe) { TraceLogger.Filter.Information(ioe.Message); }
                     }
                 }
                 catch (IOException ie)
                 {
-                    Trace.WriteLine(ie.Message);
+                    TraceLogger.Filter.Information(ie.Message);
                     throw;
                 }
             }
@@ -156,7 +161,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
         /// <param name="path"></param>
         public void Save(String path)
         {
-            Trace.WriteLine(String.Format("Save Filter: {0}", path));
+            TraceLogger.Filter.Information(String.Format("Save Filter: {0}", path));
             try
             {
                 String dir = Path.GetDirectoryName(path);
@@ -167,13 +172,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                     {
                         Filters.Serializer.Serialize(fs, this);
                     }
-                    catch (XmlException xe) { Trace.WriteLine(xe.Message); }
-                    catch (InvalidOperationException ioe) { Trace.WriteLine(ioe.Message); }
+                    catch (XmlException xe) { TraceLogger.Filter.Information(xe.Message); }
+                    catch (InvalidOperationException ioe) { TraceLogger.Filter.Information(ioe.Message); }
                 }
             }
             catch (IOException ie)
             {
-                Trace.WriteLine(ie.Message);
+                TraceLogger.Filter.Information(ie.Message);
                 throw;
             }
         }
@@ -181,6 +186,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
 
     public abstract class FilterItem : Misuzilla.Applications.TwitterIrcGateway.AddIns.IConfiguration
     {
+        public FilterItem()
+        {
+            _Counter.Increment(ref _Counter.FilterItem);
+        }
+        ~FilterItem()
+        {
+            _Counter.Decrement(ref _Counter.FilterItem);
+        }
+        
         private Boolean _enabled = true;
         [XmlAttribute]
         public Boolean Enabled
@@ -285,10 +299,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                 if (Regex.IsMatch(args.Content, _matchPattern, RegexOptions.IgnoreCase) &&
                     ((String.IsNullOrEmpty(_userMatchPattern)) ? true : Regex.IsMatch(args.User.ScreenName, _userMatchPattern)))
                 {
-                    if (!String.IsNullOrEmpty(_replacePattern))
-                    {
-                        args.Content = Regex.Replace(args.Content, _matchPattern, _replacePattern, RegexOptions.IgnoreCase);
-                    }
+                    args.Content = Regex.Replace(args.Content, _matchPattern, _replacePattern ?? String.Empty, RegexOptions.IgnoreCase);
 
                     args.IRCMessageType = _messageType;
                     return true;
@@ -463,7 +474,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                                                 ? new UTF8Encoding(false)
                                                 : Encoding.GetEncoding(OutputEncoding);
 
-                    Trace.WriteLine(String.Format("Start: {0} ({1})", ProcessPath, Arguments));
+                    TraceLogger.Filter.Information(String.Format("Start: {0} ({1})", ProcessPath, Arguments));
                     
                     ProcessStartInfo psInfo = new ProcessStartInfo(ProcessPath, Arguments);
                     psInfo.RedirectStandardInput = true;
@@ -505,7 +516,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                         {
                             if (parts.Length == 0)
                             {
-                                Trace.WriteLine("Filter was recieved invalid data");
+                                TraceLogger.Filter.Information("Filter was recieved invalid data");
                                 return false;
                             }
                             foreach (var line in parts[0].Split('\n'))
@@ -521,7 +532,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
 
                         if (process.WaitForExit(60*1000))
                         {
-                            Trace.WriteLine("Process Exited: " + process.ExitCode.ToString());
+                            TraceLogger.Filter.Information("Process Exited: " + process.ExitCode.ToString());
                             // 終了コード見る
                             if (process.ExitCode == 0)
                             {

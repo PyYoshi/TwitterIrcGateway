@@ -78,9 +78,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public static String ResolveBitlyInMessage(String message, Int32 timeOut)
         {
-            return Regex.Replace(message, @"http://bit\.ly/[A-Za-z0-9_/.;%&\-]+", delegate(Match m)
+            // 改行ゴミがついてるのでついでに削除する
+            return Regex.Replace(message, @"(http://(?:bit\.ly|j\.mp)/[A-Za-z0-9_/.;%&\-]+)[\r\n]*", delegate(Match m)
             {
-                return ResolveRedirectUrl(m.Value, timeOut);
+                return ResolveRedirectUrl(m.Groups[1].Value, timeOut);
             }, RegexOptions.IgnoreCase);
         }
         /// <summary>

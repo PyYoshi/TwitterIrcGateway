@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Misuzilla.Net.Irc;
+using System.Diagnostics;
 
 namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
 {
@@ -72,17 +73,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
             LoadAliases();
 
             // チャンネル
+            Group group;
+            if (!CurrentSession.Groups.TryGetValue(ConsoleChannelName, out group))
+            {
+                group = new Group(ConsoleChannelName);
+                CurrentSession.Groups.Add(ConsoleChannelName, group);
+            }
+            group.IsSpecial = true;
             if (autoJoin)
             {
-                Group group;
-                if (!CurrentSession.Groups.TryGetValue(ConsoleChannelName, out group))
-                {
-                    group = new Group(ConsoleChannelName);
-                    CurrentSession.Groups.Add(ConsoleChannelName, group);
-                }
-                group.IsSpecial = true;
                 group.IsJoined = true;
-
                 CurrentSession.SendServer(new JoinMessage(ConsoleChannelName, ""));
             }
 
@@ -157,6 +157,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
             catch (Exception e)
             {
                 NotifyMessage("エラー: " + e.Message);
+                CurrentSession.Logger.Error(e.ToString());
             }
         }
         
@@ -522,7 +523,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
 
         public void Dispose()
         {
-            System.Diagnostics.Trace.WriteLine(ConsoleChannelName + ": Dispose");
+            CurrentSession.Logger.Information(ConsoleChannelName + ": Dispose");
             if (ContextStack != null)
             {
                 foreach (var ctx in ContextStack)

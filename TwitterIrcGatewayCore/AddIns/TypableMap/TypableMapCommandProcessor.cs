@@ -10,9 +10,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
 
     public class TypableMapCommandProcessor
     {
-        public Session Session { get; private set; }
-        public TypableMap<Status> TypableMap { get; private set; }
         private Int32 _typableMapKeySize;
+        private ITypableMapStatusRepositoryFactory _typableMapFactory;
+        
+        public Session Session { get; private set; }
+        public ITypableMapStatusRepository TypableMap { get; private set; }
+
         public Int32 TypableMapKeySize
         {
             get
@@ -27,7 +30,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                 if (_typableMapKeySize != value)
                 {
                     _typableMapKeySize = value;
-                    TypableMap = new TypableMap<Status>(_typableMapKeySize);
+                    TypableMap = _typableMapFactory.Create(_typableMapKeySize);
                 }
             }
         }
@@ -35,12 +38,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
         private Dictionary<String, ITypableMapCommand> _commands;
         private Regex _matchRE;
 
-        public TypableMapCommandProcessor(TwitterService twitter, Session session, Int32 typableMapKeySize)
+        public TypableMapCommandProcessor(ITypableMapStatusRepositoryFactory typableMapFactory, Session session, Int32 typableMapKeySize)
         {
             Session = session;
-            TypableMap = new TypableMap<Status>(typableMapKeySize);
 
+            _typableMapKeySize = typableMapKeySize;
             _commands = new Dictionary<string, ITypableMapCommand>(StringComparer.InvariantCultureIgnoreCase);
+
+            _typableMapFactory = typableMapFactory;
+            TypableMap = typableMapFactory.Create(typableMapKeySize);
 
             foreach (var t in typeof(TypableMapCommandProcessor).GetNestedTypes())
             {
@@ -214,16 +220,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                                                                                  status.Id)
                                                                            : processor.Session.TwitterService.CreateFavorite(
                                                                                  status.Id));
-                                                   processor.Session.SendServer(new NoticeMessage
-                                                                                    {
-                                                                                        Receiver = msg.Receiver,
-                                                                                        Content =
-                                                                                            String.Format(
+                                                   processor.Session.SendChannelMessage(msg.Receiver, processor.Session.CurrentNick, String.Format(
                                                                                             "ユーザ {0} のステータス \"{1}\"をFavorites{2}しました。",
                                                                                             favStatus.User.ScreenName,
                                                                                             favStatus.Text,
-                                                                                            (isUnfav ? "から削除" : "に追加"))
-                                                                                    });
+                                                                                            (isUnfav ? "から削除" : "に追加")), true, false, false, true);
                                                });
                 return true;
             }
@@ -252,16 +253,20 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
             public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, string args)
             {
                 var session = processor.Session;
-                session.RunCheck(() =>
-                                     {
-                                         String replyMsg = String.Format("@{0} {1}", status.User.ScreenName, args);
-                                         Status updatedStatus = session.UpdateStatus(replyMsg, status.Id);
-                                         session.SendChannelMessage(updatedStatus.Text);
-                                     },
-                                 (ex) =>
-                                     {
-                                         session.SendChannelMessage(msg.Receiver, Server.ServerNick, "メッセージ送信に失敗しました", true, false, false, true);
-                                     });
+                if (args.Trim() == String.Empty)
+                {
+                    session.SendChannelMessage(msg.Receiver, Server.ServerNick, "返信に空メッセージの送信はできません。", true, false, false, true);
+                    return true;
+                }
+
+                String replyMsg = String.Format("@{0} {1}", status.User.ScreenName, args);
+                
+                // 入力が発言されたチャンネルには必ずエコーバックする。
+                // 先に出しておかないとundoがよくわからなくなる。
+                session.SendChannelMessage(msg.Receiver, session.CurrentNick, replyMsg, true, false, false, false);
+                session.UpdateStatusWithReceiverDeferred(msg.Receiver, replyMsg, status.Id, (updatedStatus) =>
+                                                                                                {
+                                                                                                });
                 return true;
             }
 

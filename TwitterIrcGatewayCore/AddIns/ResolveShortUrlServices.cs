@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 {
-    class ResolveTinyUrl : AddInBase
+    class ResolveShortUrlServices : AddInBase
     {
         public override void Initialize()
         {

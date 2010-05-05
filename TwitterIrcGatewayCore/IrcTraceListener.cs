@@ -12,6 +12,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public IrcTraceListener(Session session)
         {
             _session = session;
+#if FALSE
             if (_session.TcpClient.Connected)
             {
                 PrivMsgMessage msg = new PrivMsgMessage("$ServerTraceLog", String.Format("(0x{0}) {1}", Thread.CurrentThread.ManagedThreadId.ToString("x"), "IrcTraceListener enabled."));
@@ -20,6 +21,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 msg.Receiver = _session.Nick;
                 _session.Send(msg);
             }
+#endif
         }
         public override void Write(string message)
         {
@@ -28,6 +30,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public override void WriteLine(string message)
         {
+#if FALSE
             if (_session.TcpClient.Connected)
             {
                 StringBuilder sb = new StringBuilder();
@@ -43,6 +46,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     _session.Send(msg);
                 }
             }
+#endif
         }
     }
 }

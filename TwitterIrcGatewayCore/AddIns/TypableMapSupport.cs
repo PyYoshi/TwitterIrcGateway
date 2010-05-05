@@ -9,6 +9,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
     {
         private TypableMapCommandProcessor _typableMapCommands;
         public TypableMapCommandProcessor TypableMapCommands { get { return _typableMapCommands; } }
+        private ITypableMapStatusRepositoryFactory _typableMapFactory;
+        public ITypableMapStatusRepositoryFactory TypableMapFactory
+        {
+            get { return _typableMapFactory; }
+            set { _typableMapFactory = value; UpdateProcessor(); }
+        }
         
         public override void Initialize()
         {
@@ -16,8 +22,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             CurrentSession.PreSendMessageTimelineStatus += new EventHandler<TimelineStatusEventArgs>(Session_PreSendMessageTimelineStatus);
             CurrentSession.ConfigChanged += new EventHandler<EventArgs>(Session_ConfigChanged);
 
+            TypableMapFactory = new TypableMapStatusOnDemandRepositoryFactory(CurrentSession);
             if (CurrentSession.Config.EnableTypableMap)
-                _typableMapCommands = new TypableMapCommandProcessor(CurrentSession.TwitterService, CurrentSession, CurrentSession.Config.TypableMapKeySize);
+                UpdateProcessor();
         }
 
         void Session_PreSendMessageTimelineStatus(object sender, TimelineStatusEventArgs e)
@@ -52,7 +59,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             if (CurrentSession.Config.EnableTypableMap)
             {
                 if (_typableMapCommands == null)
-                    _typableMapCommands = new TypableMapCommandProcessor(CurrentSession.TwitterService, CurrentSession, CurrentSession.Config.TypableMapKeySize);
+                    UpdateProcessor();
                 if (_typableMapCommands.TypableMapKeySize != CurrentSession.Config.TypableMapKeySize)
                     _typableMapCommands.TypableMapKeySize = CurrentSession.Config.TypableMapKeySize;
             }
@@ -60,6 +67,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             {
                 _typableMapCommands = null;
             }
+        }
+    
+        void UpdateProcessor()
+        {
+            _typableMapCommands = new TypableMapCommandProcessor(TypableMapFactory, CurrentSession, CurrentSession.Config.TypableMapKeySize);
         }
     }
 }

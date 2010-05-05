@@ -61,8 +61,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             Config.Default.ClientMessageWait = _settings.ClientMessageWait;
             Config.Default.BroadcastUpdateMessageIsNotice = _settings.BroadcastUpdateMessageIsNotice;
             Config.Default.POSTFetchMode = _settings.POSTFetchMode;
+            Config.Default.EnableCompression = _settings.EnableCompression;
+            Config.Default.DisableNoticeAtFirstTime = _settings.DisableNoticeAtFirstTime;
+
             _server = new Server();
-            _server.SessionStartedReceived += new EventHandler<SessionStartedEventArgs>(_server_SessionStartedReceived);
+            _server.ConnectionAttached += new EventHandler<ConnectionAttachEventArgs>(_server_ConnectionAttached);
             try
             {
                 _server.Encoding = (String.Compare(_settings.Charset, "UTF-8", true) == 0)
@@ -96,10 +99,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             _notifyIcon.Visible = false;
         }
 
-        void _server_SessionStartedReceived(object sender, SessionStartedEventArgs e)
+        void _server_ConnectionAttached(object sender, ConnectionAttachEventArgs e)
         {
-            _notifyIcon.ShowBalloonTip(1000 * 10, Name, String.Format("ユーザ {0} がサーバに接続しました。", e.UserName), ToolTipIcon.Info);
+            _notifyIcon.ShowBalloonTip(1000 * 10, Name, String.Format("ユーザ {0} がサーバに接続しました。", ((Connection)(e.Connection)).TwitterUser.ScreenName), ToolTipIcon.Info);
         }
+
 
         private void ContextMenuItemExit(Object sender, EventArgs e)
         {

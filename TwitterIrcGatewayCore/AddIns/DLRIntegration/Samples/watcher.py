@@ -173,7 +173,8 @@ class Watcher(Object):
 	def onBeforeUnload(self, sender, e):
 		CurrentSession.AddInManager.GetAddIn[ConsoleAddIn]().UnregisterContext(DLRContextHelper.Wrap(CurrentSession, "WatcherContext", WatcherContext))
 		self.interval = 0
-		self.thread.Join()
+		self.thread.Abort()
+		self.thread.Join(5000)
 
 watcher = Watcher.instance()
 watcher.start()

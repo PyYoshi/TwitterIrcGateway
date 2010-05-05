@@ -32,14 +32,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
                 CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<DLRContext>();
                 ReloadScripts((fileName, ex) =>
                 {
-                    Trace.WriteLine("Script Executed: " + fileName);
+                    CurrentSession.Logger.Information("Script Executed: " + fileName);
                     if (ex != null)
                     {
-                        Trace.WriteLine(ex.ToString());
+                        CurrentSession.Logger.Error(ex.ToString());
                         if (ex is SyntaxErrorException)
                         {
                             SyntaxErrorException syntaxEx = ex as SyntaxErrorException;
-                            Trace.WriteLine(String.Format("  行: {0}, 列 {1}, ファイル: {2}", syntaxEx.Line, syntaxEx.Column, syntaxEx.SourcePath));
+                            CurrentSession.Logger.Error(String.Format("  行: {0}, 列 {1}, ファイル: {2}", syntaxEx.Line, syntaxEx.Column, syntaxEx.SourcePath));
                         }
                     }
                 });
@@ -70,7 +70,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
                         }
                         catch (Exception e)
                         {
-                            Trace.WriteLine("Exception at BeforeUnload(Ignore): "+e.Message);
+                            CurrentSession.Logger.Error("Exception at BeforeUnload(Ignore): "+e.Message);
                         }
                     }
                 }
@@ -95,8 +95,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
             Shutdown();
 
             ScriptRuntimeSetup scriptRuntimeSetup = new ScriptRuntimeSetup();
-            scriptRuntimeSetup.LanguageSetups.Add(new LanguageSetup("IronPython.Runtime.PythonContext, IronPython", "IronPython 2.6 Alpha", new[] { "IronPython", "Python", "py" }, new[] { ".py" }));
-            scriptRuntimeSetup.LanguageSetups.Add(new LanguageSetup("IronRuby.Runtime.RubyContext, IronRuby", "IronRuby 1.0 Alpha", new[] { "IronRuby", "Ruby", "rb" }, new[] { ".rb" }));
+            scriptRuntimeSetup.LanguageSetups.Add(new LanguageSetup("IronPython.Runtime.PythonContext, IronPython", "IronPython 2.6", new[] { "IronPython", "Python", "py" }, new[] { ".py" }));
+            scriptRuntimeSetup.LanguageSetups.Add(new LanguageSetup("IronRuby.Runtime.RubyContext, IronRuby", "IronRuby 1.0", new[] { "IronRuby", "Ruby", "rb" }, new[] { ".rb" }));
             scriptRuntimeSetup.LanguageSetups[0].Options.Add("SearchPaths", @"Libraries\IronPython".Split(';'));
             scriptRuntimeSetup.LanguageSetups[1].Options.Add("SearchPaths", @"Libraries\IronRuby\IronRuby;Libraries\IronRuby\ruby;Libraries\IronRuby\ruby\site_ruby;Libraries\IronRuby\ruby\site_ruby\1.8;Libraries\IronRuby\ruby\1.8".Split(';'));
             scriptRuntimeSetup.LanguageSetups[1].Options.Add("LibraryPaths", @"Libraries\IronRuby\IronRuby;Libraries\IronRuby\ruby;Libraries\IronRuby\ruby\site_ruby;Libraries\IronRuby\ruby\site_ruby\1.8;Libraries\IronRuby\ruby\1.8".Split(';'));

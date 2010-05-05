@@ -28,5 +28,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
             Object[] attrs = customAttributeProvider.GetCustomAttributes(typeof(DescriptionAttribute), true);
             return (attrs.Length == 0) ? "" : ((DescriptionAttribute)attrs[0]).Description;
         }
+        public static Object GetDefaultValue(Type t)
+        {
+            Object[] attrs = t.GetCustomAttributes(typeof(DefaultValueAttribute), true);
+            return (attrs.Length == 0) ? null : ((DefaultValueAttribute)attrs[0]).Value;
+        }
+        public static Object GetDefaultValue(ICustomAttributeProvider customAttributeProvider)
+        {
+            Object[] attrs = customAttributeProvider.GetCustomAttributes(typeof(DefaultValueAttribute), true);
+            return (attrs.Length == 0) ? null : ((DefaultValueAttribute)attrs[0]).Value;
+        }
     }
 }

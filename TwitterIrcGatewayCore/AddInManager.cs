@@ -62,6 +62,20 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             _server = ServerProxy.GetTransparentProxy() as Server;
             _session = SessionProxy.GetTransparentProxy() as Session;
         }
+        
+        static AddInManager()
+        {
+            // これがないと AddIns 内での参照が死ぬ
+            AppDomain.CurrentDomain.AssemblyResolve += (object sender, ResolveEventArgs args) =>
+                                                           {
+                                                               foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+                                                               {
+                                                                   if (asm.FullName == args.Name)
+                                                                       return asm;
+                                                               }
+                                                               return null;
+                                                           };
+        }
 
         //public static AddInManager CreateInstanceWithAppDomain(Server server, Session session)
         //{
@@ -101,7 +115,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     }
                     catch (Exception e)
                     {
-                        Trace.WriteLine(e);
+                        _session.Logger.Error(e.ToString());
                     }
                 }
             }
@@ -118,11 +132,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             {
                 if (_session.Config.DisabledAddInsList.Contains(addInType.FullName))
                 {
-                    Trace.WriteLine(String.Format("AddIn[Disabled]: {0}", addInType.FullName));
+                    _session.Logger.Information("AddIn[Disabled]: {0}", addInType.FullName);
                     continue;
                 }
 
-                Trace.WriteLine(String.Format("AddIn: {0}", addInType.FullName));
+                _session.Logger.Information("AddIn: {0}", addInType.FullName);
                 _addIns.Add(Activator.CreateInstance(addInType) as IAddIn);
             }
 
@@ -137,7 +151,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             _xmlSerializer = new XmlSerializer(typeof(Object), xmlAttrOverrides, _configurationTypes.ToArray(), null, null);
 
             foreach (IAddIn addIn in _addIns)
-                addIn.Initialize(_server, _session);
+            {
+                try
+                {
+                    addIn.Initialize(_server, _session);
+                }
+                catch (Exception e)
+                {
+                    _session.Logger.Error(e.ToString());
+                }
+            }
         }
 
         /// <summary>
@@ -153,7 +176,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 }
                 catch (Exception e)
                 {
-                    Trace.WriteLine("Exception at Uninitialize(Ignore): " + String.Format("{0}\n{1}", addIn.GetType(), e.Message));
+                    _session.Logger.Error("Exception at Uninitialize(Ignore): {0}\n{1}", addIn.GetType(), e.Message);
                 }
             }
 
@@ -175,7 +198,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             
             if (File.Exists(path))
             {
-                Trace.WriteLine(String.Format("Load Configuration: {0}", path));
+                _session.Logger.Information("Load Configuration: {0}", path);
                 try
                 {
                     using (FileStream fs = new FileStream(path, FileMode.Open))
@@ -188,17 +211,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                         }
                         catch (XmlException xe)
                         {
-                            Trace.WriteLine(xe.Message);
+                            _session.Logger.Error(xe.Message);
                         }
                         catch (InvalidOperationException ioe)
                         {
-                            Trace.WriteLine(ioe.Message);
+                            _session.Logger.Error(ioe.Message);
                         }
                     }
                 }
                 catch (IOException ie)
                 {
-                    Trace.WriteLine(ie.Message);
+                    _session.Logger.Error(ie.Message);
                     throw;
                 }
             }
@@ -231,7 +254,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             lock (o)
             {
-                Trace.WriteLine(String.Format("Save Configuration: {0}", path));
+                _session.Logger.Information("Save Configuration: {0}", path);
                 try
                 {
                     String dir = Path.GetDirectoryName(path);
@@ -244,19 +267,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                         }
                         catch (XmlException xe)
                         {
-                            Trace.WriteLine(xe.Message);
+                            _session.Logger.Error(xe.Message);
                             throw;
                         }
                         catch (InvalidOperationException ioe)
                         {
-                            Trace.WriteLine(ioe.Message);
+                            _session.Logger.Error(ioe.Message);
                             throw;
                         }
                     }
                 }
                 catch (IOException ie)
                 {
-                    Trace.WriteLine(ie.Message);
+                    _session.Logger.Error(ie.Message);
                     throw;
                 }
             }

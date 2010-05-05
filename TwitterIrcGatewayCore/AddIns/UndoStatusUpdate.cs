@@ -27,7 +27,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                                                if (String.Compare(e.Text.Trim(), UndoCommandString, true) == 0)
                                                {
                                                    e.Cancel = true;
+                                                    
+                                                   // まず送信待ちをみる
+                                                   if (CurrentSession.TryCancelDeferredUpdate())
+                                                   {
+                                                       CurrentSession.SendServer(
+                                                           new NoticeMessage(e.ReceivedMessage.Receiver,
+                                                                             "ステータスのアップデート予定を削除しました。"));
+                                                       return;
+                                                   }
 
+                                                   // 送信済みを削除する
                                                    if (_lastUpdateStatusList.Count == 0)
                                                    {
                                                        CurrentSession.SendServer(new NoticeMessage(e.ReceivedMessage.Receiver,

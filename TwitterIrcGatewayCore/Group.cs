@@ -57,7 +57,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             foreach (Group group in groups)
             {
                 retGroups[group.Name] = group;
-                group.IsJoined = false;
+                //group.IsJoined = false;
                 group.ChannelModes = group.ChannelModes == null ? new List<ChannelMode>() : group.ChannelModes;
             }
 
@@ -74,7 +74,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             // group 読み取り
             if (File.Exists(path))
             {
-                Trace.WriteLine(String.Format("Load Group: {0}", path));
+                TraceLogger.Server.Information(String.Format("Load Group: {0}", path));
                 try
                 {
                     using (FileStream fs = new FileStream(path, FileMode.Open))
@@ -85,13 +85,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                             if (groups != null)
                                 return groups;
                         }
-                        catch (XmlException xe) { Trace.WriteLine(xe.Message); }
-                        catch (InvalidOperationException ioe) { Trace.WriteLine(ioe.Message); }
+                        catch (XmlException xe) { TraceLogger.Server.Information(xe.Message); }
+                        catch (InvalidOperationException ioe) { TraceLogger.Server.Information(ioe.Message); }
                     }
                 }
                 catch (IOException ie)
                 {
-                    Trace.WriteLine(ie.Message);
+                    TraceLogger.Server.Information(ie.Message);
                     throw;
                 }
             }
@@ -104,7 +104,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="path"></param>
         public void Save(String path)
         {
-            Trace.WriteLine(String.Format("Save Group: {0}", path));
+            TraceLogger.Server.Information(String.Format("Save Group: {0}", path));
             try
             {
                 String dir = Path.GetDirectoryName(path);
@@ -115,13 +115,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     {
                         this.Serialize(fs);
                     }
-                    catch (XmlException xe) { Trace.WriteLine(xe.Message); }
-                    catch (InvalidOperationException ioe) { Trace.WriteLine(ioe.Message); }
+                    catch (XmlException xe) { TraceLogger.Server.Information(xe.Message); }
+                    catch (InvalidOperationException ioe) { TraceLogger.Server.Information(ioe.Message); }
                 }
             }
             catch (IOException ie)
             {
-                Trace.WriteLine(ie.Message);
+                TraceLogger.Server.Information(ie.Message);
                 throw;
             }
         }
@@ -165,6 +165,25 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public Group()
         {
             ChannelModes = new List<ChannelMode>();
+        }
+
+        /// <summary>
+        /// グループを複製します。
+        /// </summary>
+        /// <returns></returns>
+        public Group Clone()
+        {
+            Group g = new Group()
+            {
+                Name = this.Name,
+                ChannelModes = this.ChannelModes,
+                IsJoined = this.IsJoined,
+                IsSpecial = this.IsSpecial,
+                Members = new List<string>(this.Members),
+                Mode = this.Mode,
+                Topic = this.Topic
+            };
+            return g;
         }
 
         /// <summary>
