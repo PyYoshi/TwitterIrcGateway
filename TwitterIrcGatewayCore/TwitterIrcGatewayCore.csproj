@@ -218,11 +218,14 @@
     <Compile Include="AuthenticateResult.cs" />
     <Compile Include="Authentication\ApiAuthentication.cs" />
     <Compile Include="Authentication\IAuthentication.cs" />
+    <Compile Include="Authentication\XAuthAuthentication.cs" />
     <Compile Include="Connection.cs" />
     <Compile Include="ConnectionBase.cs" />
     <Compile Include="Deferred.cs" />
     <Compile Include="IIrcMessageSendable.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="OAuth\OAuthBase.cs" />
+    <Compile Include="OAuth\TwitterOAuth.cs" />
     <Compile Include="SessionBase.cs" />
     <Compile Include="SessionIM.cs" />
     <Compile Include="Config.cs" />

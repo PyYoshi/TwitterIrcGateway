@@ -13,6 +13,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public static class Utility
     {
+        private const String noEscapeCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~";
+
         static Utility()
         {
             InitializeCharEntityReferenceTable();
@@ -193,10 +195,20 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public static String UrlEncode(String s)
         {
             StringBuilder sb = new StringBuilder();
-            Byte[] bytes = Encoding.UTF8.GetBytes(s);
-            foreach (Byte b in bytes)
+            foreach (Char c in s)
             {
-                sb.AppendFormat("%{0:x2}", b);
+                if (noEscapeCharacters.IndexOf(c) > -1)
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    Byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
+                    foreach (Byte b in bytes)
+                    {
+                        sb.AppendFormat("%{0:X2}", b);
+                    }
+                }
             }
 
             return sb.ToString();

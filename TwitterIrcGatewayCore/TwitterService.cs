@@ -18,7 +18,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     public class TwitterService : IDisposable
     {
         //private WebClient _webClient;
-        private CredentialCache _credential;
+        private CredentialCache _credential = new CredentialCache();
         private IWebProxy _proxy = WebRequest.DefaultWebProxy;
         private String _userName;
         private Boolean _cookieLoginMode = false;
@@ -80,25 +80,41 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="userName">ユーザー名</param>
         /// <param name="password">パスワード</param>
+        [Obsolete]
         public TwitterService(String userName, String password)
         {
-            _Counter.Increment(ref _Counter.TwitterService);
-            CredentialCache credCache = new CredentialCache();
-            credCache.Add(new Uri(ServiceServerPrefix), "Basic", new NetworkCredential(userName, password));
-            _credential = credCache;
-
+            _credential.Add(new Uri(ServiceServerPrefix), "Basic", new NetworkCredential(userName, password));
             _userName = userName;
 
+            Initialize();
+        }
+
+        /// <summary>
+        /// TwitterService クラスのインスタンスをOAuthを利用する設定で初期化します。
+        /// </summary>
+        /// <param name="twitterIdentity"></param>
+        public TwitterService(TwitterIdentity twitterIdentity)
+        {
+            OAuthClient = new TwitterOAuth(Authentication.XAuthAuthentication.ClientKey,
+                                           Authentication.XAuthAuthentication.SecretKey)
+                          {
+                              Token = twitterIdentity.Token,
+                              TokenSecret = twitterIdentity.TokenSecret
+                          };
+            _userName = twitterIdentity.ScreenName;
+
+            Initialize();
+        }
+
+        private void Initialize()
+        {
+            _Counter.Increment(ref _Counter.TwitterService);
             _timer = new Timer(new TimerCallback(OnTimerCallback), null, Timeout.Infinite, Timeout.Infinite);
             _timerDirectMessage = new Timer(new TimerCallback(OnTimerCallbackDirectMessage), null, Timeout.Infinite, Timeout.Infinite);
             _timerReplies = new Timer(new TimerCallback(OnTimerCallbackReplies), null, Timeout.Infinite, Timeout.Infinite);
 
             _statusBuffer = new LinkedList<Int64>();
             _repliesBuffer = new LinkedList<Int64>();
-
-            //_webClient = new PreAuthenticatedWebClient();
-            //_webClient = new WebClient();
-            //_webClient.Credentials = _credential;
 
             Interval = 90;
             IntervalDirectMessage = 360;
@@ -232,6 +248,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// OAuthクライアントを取得します。
+        /// </summary>
+        public TwitterOAuth OAuthClient
+        {
+            get;
+            private set;
         }
 
         /// <summary>
@@ -691,7 +716,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/favorites/create/{0}.xml", id), new byte[0]);
+                String responseBody = POST(String.Format("/favorites/create/{0}.xml", id), "");
                 Status status;
                 if (NilClasses.CanDeserialize(responseBody))
                 {
@@ -714,7 +739,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/favorites/destroy/{0}.xml", id), new byte[0]);
+                String responseBody = POST(String.Format("/favorites/destroy/{0}.xml", id), "");
                 Status status;
                 if (NilClasses.CanDeserialize(responseBody))
                 {
@@ -737,7 +762,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/statuses/destroy/{0}.xml", id), new byte[0]);
+                String responseBody = POST(String.Format("/statuses/destroy/{0}.xml", id), "");
                 Status status;
                 if (NilClasses.CanDeserialize(responseBody))
                 {
@@ -760,7 +785,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/statuses/retweet/{0}.xml", id), new byte[0]);
+                String responseBody = POST(String.Format("/statuses/retweet/{0}.xml", id), "");
                 if (NilClasses.CanDeserialize(responseBody))
                 {
                     return null;
@@ -1377,9 +1402,34 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public String GET(String url, Boolean postFetchMode)
         {
+            if (OAuthClient == null)
+            {
+                return GETWithBasicAuth(url, postFetchMode);
+            }
+            else
+            {
+                return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.GET);
+            }
+        }
+
+        public String POST(String url, String postData)
+        {
+            if (OAuthClient == null)
+            {
+                return POSTWithBasicAuth(url, Encoding.UTF8.GetBytes(postData));
+            }
+            else
+            {
+                return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
+            }
+        }
+
+        #region Basic 認証アクセス
+        private String GETWithBasicAuth(String url, Boolean postFetchMode)
+        {
             if (postFetchMode)
             {
-                return POST(url, new Byte[0]);
+                return POST(url, "");
             }
             else
             {
@@ -1392,7 +1442,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
         }
 
-        public String POST(String url, Byte[] postData)
+        private String POSTWithBasicAuth(String url, Byte[] postData)
         {
             url = ServiceServerPrefix + url;
             TraceLogger.Twitter.Information("POST: " + url);
@@ -1406,11 +1456,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 return sr.ReadToEnd();
         }
 
-        public String POST(String url, String postData)
-        {
-            return POST(url, Encoding.UTF8.GetBytes(postData));
-        }
-
+        //[Obsolete]
         protected virtual HttpWebRequest CreateHttpWebRequest(String url, String method)
         {
             HttpWebRequest webRequest = HttpWebRequest.Create(url) as HttpWebRequest;
@@ -1436,6 +1482,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             return webRequest as HttpWebRequest;
         }
+        #endregion
 
         private Stream GetResponseStream(WebResponse webResponse)
         {
@@ -1450,7 +1497,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         #region Cookie アクセス
 
         private CookieCollection _cookies = null;
-        //[Obsolete("Cookieによる認証はサポートされません。代わりにGET(POST)を利用してください。")]
+        [Obsolete("Cookieによる認証はサポートされません。代わりにGET(POST)を利用してください。")]
         public String GETWithCookie(String url)
         {
             Boolean isRetry = false;
@@ -1474,6 +1521,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
         }
 
+        [Obsolete("Cookieによる認証はサポートされません。")]
         public CookieCollection CookieLogin()
         {
             TraceLogger.Twitter.Information("Cookie Login: {0}", _userName);
@@ -1506,6 +1554,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
         }
 
+        [Obsolete("Cookieによる認証はサポートされません。")]
         WebRequest CreateWebRequest(String uri)
         {
             WebRequest request = WebRequest.Create(uri);
@@ -1530,88 +1579,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return request;
         }
 
-#if FALSE
-        private CookieCollection Login(String userNameOrEmail, String password)
-        {
-            System.Diagnostics.TraceLogger.Shared.Information(String.Format("Cookie Login: {0}", userNameOrEmail));
-            using (CookieEnabledWebClient webClient = new CookieEnabledWebClient())
-            {
-                Byte[] data = webClient.UploadData("https://twitter.com/sessions", Encoding.UTF8.GetBytes(
-                    String.Format("username_or_email={0}&password={1}&remember_me=1&commit=Sign%20In", userNameOrEmail, password)
-                ));
-
-                String responseBody = Encoding.UTF8.GetString(data);
-
-                if (webClient.Cookies == null)
-                {
-                    throw new ApplicationException("ログインに失敗しました。ユーザ名またはパスワードが間違っている可能性があります。");
-                }
-
-                // XXX: .twitter.com となっていると twitter.com に送られないので書き換える
-                foreach (Cookie cookie in webClient.Cookies)
-                {
-                    cookie.Domain = "twitter.com";
-                }
-
-                return webClient.Cookies;
-            }
-        }
-        class CookieEnabledWebClient : WebClient
-        {
-            public CookieEnabledWebClient()
-                : base()
-            {
-            }
-            public CookieEnabledWebClient(CookieCollection cookies)
-                : base()
-            {
-                _cookies = cookies;
-            }
-            private CookieCollection _cookies;
-            public CookieCollection Cookies
-            {
-                get
-                {
-                    return _cookies;
-                }
-                set
-                {
-                    _cookies = value;
-                }
-            }
-
-            protected override WebRequest GetWebRequest(Uri address)
-            {
-                WebRequest request = base.GetWebRequest(address);
-                if (request is HttpWebRequest)
-                {
-                    HttpWebRequest httpRequest = request as HttpWebRequest;
-                    httpRequest.UserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)";
-                    httpRequest.Referer = Referer;
-                    httpRequest.PreAuthenticate = false;
-                    httpRequest.Accept = "*/*";
-                    httpRequest.CookieContainer = new CookieContainer();
-                    if (_cookies != null)
-                    {
-                        httpRequest.CookieContainer.Add(_cookies);
-                    }
-                }
-                return request;
-            }
-
-            protected override WebResponse GetWebResponse(WebRequest request)
-            {
-                WebResponse response = base.GetWebResponse(request);
-                if (response is HttpWebResponse)
-                {
-                    HttpWebResponse httpResponse = response as HttpWebResponse;
-                    _cookies = httpResponse.Cookies;
-                }
-                return response;
-            }
-        }
-#endif
-
         String DownloadString(String url)
         {
             WebRequest request = CreateWebRequest(url);
@@ -1631,12 +1598,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     response.Close();
                 }
             }
-#if FALSE
-            using (CookieEnabledWebClient webClient = new CookieEnabledWebClient(_cookies))
-            {
-                return webClient.DownloadString(url);
-            }
-#endif
         }
         #endregion
     }

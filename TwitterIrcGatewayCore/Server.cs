@@ -26,7 +26,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public IWebProxy Proxy = null;
 
         public const String ServerName = "localhost";
-        public const String ServerNick = "$TwitterIrcGatewayServer$";
+        public const String ServerNick = "$TweetIrcGatewayServer$";
 
         /// <summary>
         /// ユーザ認証を行うクラスを取得・設定します
@@ -85,7 +85,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public Server(Boolean useSslConnection)
         {
-            Authentication = new ApiAuthentication();
+            ServicePointManager.DefaultConnectionLimit = 1000;
+            Authentication = new XAuthAuthentication();
             IsSslConnection = useSslConnection;
         }
         

@@ -19,6 +19,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// Twitter上のユーザを取得します。
         /// </summary>
         public User TwitterUser { get; private set; }
+        public TwitterIdentity Identity { get; private set; }
 
         public Connection(Server server, TcpClient tcpClient) : base(server, tcpClient)
         {
@@ -32,9 +33,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         protected override AuthenticateResult OnAuthenticate(UserInfo userInfo)
         {
             AuthenticateResult authResult = CurrentServer.Authentication.Authenticate(CurrentServer, this, userInfo);
-            if (authResult is TwitterAuthenticateResult)
+            TwitterAuthenticateResult twitterAuthResult = authResult as TwitterAuthenticateResult;
+            if (authResult != null)
             {
-                TwitterUser = ((TwitterAuthenticateResult) authResult).User;
+                TwitterUser = twitterAuthResult.User;
+                Identity = twitterAuthResult.Identity;
             }
             return authResult;
         }

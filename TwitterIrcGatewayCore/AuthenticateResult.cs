@@ -57,9 +57,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         public User User { get; set; }
 
-        public TwitterAuthenticateResult(User user) : base()
+        /// <summary>
+        /// Twitterのログイン情報を取得・設定します。OAuthを利用しているときのみ利用できます。
+        /// </summary>
+        public TwitterIdentity Identity { get; set; }
+
+        public TwitterAuthenticateResult(User user) : this(user, null)
+        {
+        }
+
+        public TwitterAuthenticateResult(User user, TwitterIdentity identity) : base()
         {
             User = user;
+            Identity = identity;
         }
     }
 }

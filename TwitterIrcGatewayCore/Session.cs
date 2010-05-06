@@ -477,7 +477,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             //
             // Twitte Service Setup
             //
-            _twitter = new TwitterService(Connections[0].UserInfo.UserName, Connections[0].UserInfo.Password);
+            if (((Connection)Connections[0]).Identity != null)
+            {
+                _twitter = new TwitterService(((Connection)Connections[0]).Identity);
+            }
+            else
+            {
+                _twitter = new TwitterService(Connections[0].UserInfo.UserName, Connections[0].UserInfo.Password);
+            }
             _twitter.EnableCompression = Config.Default.EnableCompression; // TODO: なんとかする
             _twitter.BufferSize = _config.BufferSize;
             _twitter.Interval = _config.Interval;
@@ -874,7 +881,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             {
                 String content = String.Format("メッセージ送信に失敗しました({0})" + (!isRetry ? "/リトライします。" : ""), ex.Message.Replace("\n", " "));
                 SendChannelMessage(receiver, Server.ServerNick, content, true, false, false, true);
-
+                var retVal = new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
                 // 一回だけリトライするよ
                 if (!isRetry)
                 {
