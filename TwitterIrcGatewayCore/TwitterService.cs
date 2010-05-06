@@ -482,6 +482,28 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
 
         /// <summary>
+        /// 指定したIDでステータスを取得します。
+        /// </summary>
+        /// <exception cref="WebException"></exception>
+        /// <exception cref="TwitterServiceException"></exception>
+        public Status GetStatusById(Int64 id)
+        {
+            return ExecuteRequest<Status>(() =>
+            {
+                String responseBody = GET(String.Format("/statuses/show.xml?id={0}", id), false);
+                if (NilClasses.CanDeserialize(responseBody))
+                {
+                    return null;
+                }
+                else
+                {
+                    Status status = Status.Serializer.Deserialize(new StringReader(responseBody)) as Status;
+                    return status;
+                }
+            });
+        }
+
+        /// <summary>
         /// replies を取得します。
         /// </summary>
         /// <exception cref="WebException"></exception>
