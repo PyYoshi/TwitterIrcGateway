@@ -34,7 +34,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             AuthenticateResult authResult = CurrentServer.Authentication.Authenticate(CurrentServer, this, userInfo);
             TwitterAuthenticateResult twitterAuthResult = authResult as TwitterAuthenticateResult;
-            if (authResult != null)
+            if (authResult != null && authResult.IsAuthenticated)
             {
                 TwitterUser = twitterAuthResult.User;
                 Identity = twitterAuthResult.Identity;

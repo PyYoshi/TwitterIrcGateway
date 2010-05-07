@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Web;
 using System.Net;
 using OAuth;
@@ -80,7 +82,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public TwitterIdentity RequestAccessToken(String authToken, String verifier)
         {
             Verifier = verifier;
-            String result = Request(AccessTokenUrl, HttpMethod.GET, authToken, String.Empty);
+            String result = ReadResponse(RequestInternal(AccessTokenUrl, HttpMethod.GET, authToken, String.Empty));
             NameValueCollection returnValues = new NameValueCollection();
             foreach (var keyValue in result.Split(new[] { '&', ';' }, StringSplitOptions.RemoveEmptyEntries)
                                            .Select(p => p.Split(new[] { '=' }, 2))
@@ -105,7 +107,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + String.Join("&", parameters.Select(kv => String.Concat(Uri.EscapeDataString(kv.Key), "=", Uri.EscapeDataString(kv.Value))).ToArray());
 
             Verifier = verifier;
-            String result = Request(newUri.Uri, HttpMethod.POST, authToken, String.Empty);
+            String result = ReadResponse(RequestInternal(newUri.Uri, HttpMethod.POST, authToken, String.Empty));
             NameValueCollection returnValues = new NameValueCollection();
             foreach (var keyValue in result.Split(new[] { '&', ';' }, StringSplitOptions.RemoveEmptyEntries)
                                            .Select(p => p.Split(new[] { '=' }, 2))
@@ -127,7 +129,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public String Request(Uri requestUrl, HttpMethod method)
         {
-            return Request(requestUrl, method, Token, TokenSecret);
+            return ReadResponse(RequestInternal(requestUrl, method, Token, TokenSecret));
         }
 
         public String Request(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters)
@@ -140,10 +142,28 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             UriBuilder newUri = new UriBuilder(requestUrl);
             newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + parameters;
 
-            return Request(newUri.Uri, method, Token, TokenSecret);
+            return ReadResponse(RequestInternal(newUri.Uri, method, Token, TokenSecret));
         }
 
-        private String Request(Uri requestUrl, HttpMethod method, String token, String tokenSecret)
+        public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method)
+        {
+            return RequestInternal(requestUrl, method, Token, TokenSecret);
+        }
+
+        public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters)
+        {
+            return CreateRequest(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Uri.EscapeDataString(kv.Key), "=", Uri.EscapeDataString(kv.Value))).ToArray()));
+        }
+
+        public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method, String parameters)
+        {
+            UriBuilder newUri = new UriBuilder(requestUrl);
+            newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + parameters;
+
+            return RequestInternal(newUri.Uri, method, Token, TokenSecret);
+        }
+
+        private HttpWebRequest RequestInternal(Uri requestUrl, HttpMethod method, String token, String tokenSecret)
         {
             String normalizedUrl, queryString;
 
@@ -165,20 +185,47 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                                             Query = queryString
                                         };
 
-            using (WebClientEx webClient = new WebClientEx())
+            if (method == HttpMethod.GET)
             {
-                String retVal;
-                if (method == HttpMethod.GET)
-                {
-                    retVal = webClient.DownloadString(uriBuilder.Uri);
-                }
-                else
-                {
-                    retVal = webClient.UploadString(normalizedUrl, "POST", queryString);
-                }
-                return retVal;
+                return RequestInternalGet(uriBuilder.Uri.ToString());
             }
-        }    
+            else
+            {
+                return RequestInternalPost(normalizedUrl, queryString);
+            }
+        }
+
+        private String ReadResponse(HttpWebRequest webRequest)
+        {
+            using (var response = webRequest.GetResponse())
+            {
+                StreamReader reader = new StreamReader(response.GetResponseStream());
+                return reader.ReadToEnd();
+            }
+        }
+
+        private HttpWebRequest RequestInternalGet(String uri)
+        {
+            HttpWebRequest webRequest = WebRequest.Create(uri) as HttpWebRequest;
+            webRequest.ServicePoint.Expect100Continue = false;
+            webRequest.Timeout = 30 * 1000;
+            webRequest.Method = "GET";
+            return webRequest;
+        }
+
+        private HttpWebRequest RequestInternalPost(String uri, String postData)
+        {
+            HttpWebRequest webRequest = WebRequest.Create(uri) as HttpWebRequest;
+            webRequest.ServicePoint.Expect100Continue = false;
+            webRequest.Timeout = 30 * 1000;
+            webRequest.Method = "POST";
+            using (Stream stream = webRequest.GetRequestStream())
+            {
+                Byte[] bytes = new UTF8Encoding(false).GetBytes(postData);
+                stream.Write(bytes, 0, bytes.Length);
+            }
+            return webRequest;
+        }
 
         private class WebClientEx : WebClient
         {
