@@ -292,6 +292,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
             set { _messageType = value; }
         }
 
+        public Boolean IsRemoveContent
+        {
+            get;
+            set;
+        }
+
         public override Boolean Execute(FilterArgs args)
         {
             if (!String.IsNullOrEmpty(_matchPattern))
@@ -299,7 +305,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                 if (Regex.IsMatch(args.Content, _matchPattern, RegexOptions.IgnoreCase) &&
                     ((String.IsNullOrEmpty(_userMatchPattern)) ? true : Regex.IsMatch(args.User.ScreenName, _userMatchPattern)))
                 {
-                    args.Content = Regex.Replace(args.Content, _matchPattern, _replacePattern ?? String.Empty, RegexOptions.IgnoreCase);
+                    if (IsRemoveContent || !String.IsNullOrEmpty(_replacePattern))
+                    {
+                        args.Content = Regex.Replace(args.Content, _matchPattern, (_replacePattern ?? String.Empty), RegexOptions.IgnoreCase);
+                    }
 
                     args.IRCMessageType = _messageType;
                     return true;
