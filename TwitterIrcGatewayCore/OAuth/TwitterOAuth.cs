@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Principal;
 using System.Text;
+using System.Xml;
 using OAuth;
 
 namespace Misuzilla.Applications.TwitterIrcGateway
@@ -204,6 +205,30 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + parameters;
 
             return RequestInternal(newUri.Uri, method, Token, TokenSecret);
+        }
+
+        public static Boolean TryGetErrorMessageFromResponseXml(String xmlBody, out String errorMessage)
+        {
+            errorMessage = null;
+
+            if (xmlBody.IndexOf("<error>") == -1)
+                 return false;
+
+            try
+            {
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(xmlBody);
+                XmlNode node = xmlDoc.SelectSingleNode("//hash/error");
+                if (node != null)
+                {
+                    errorMessage = node.InnerText;
+                    return true;
+                }
+            }
+            catch (XmlException)
+            {
+            }
+            return false;
         }
 
         #region Internal Implementation

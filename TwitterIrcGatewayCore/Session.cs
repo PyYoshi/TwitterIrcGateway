@@ -1119,6 +1119,31 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         #region Twitter Service イベント
         void twitter_CheckError(object sender, ErrorEventArgs e)
         {
+            // OAuth の 401 Unauthorized にはなぜかエラーが入ってるのでそれを出す
+            if (e.Exception is WebException)
+            {
+                using (HttpWebResponse webResponse = (e.Exception as WebException).Response as HttpWebResponse)
+                {
+                    if (TwitterService.OAuthClient != null && webResponse != null && webResponse.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        try
+                        {
+                            String body = new StreamReader(webResponse.GetResponseStream()).ReadToEnd();
+                            String errorMessage;
+                            if (TwitterOAuth.TryGetErrorMessageFromResponseXml(body, out errorMessage))
+                            {
+                                SendServerErrorMessage(errorMessage);
+                                return;
+                            }
+                        }
+                        catch(IOException)
+                        {
+                        }
+                    }
+                }
+            }
+
+            // Default
             SendServerErrorMessage(e.Exception.Message);
         }
 
