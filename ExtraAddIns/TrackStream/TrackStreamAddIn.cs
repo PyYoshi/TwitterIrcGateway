@@ -17,9 +17,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
 {
     public class TrackStreamAddIn : AddInBase
     {
-        [ThreadStatic]
-        private static IPEndPoint _localIPEndpoint;
-
         private HashSet<Int64> _friendIds;
 
         private Thread _workerThread;
@@ -74,21 +71,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
         {
             try
             {
-                String ipEndpoint = Config.IPEndPoint;
-                _localIPEndpoint = (ipEndpoint == null) ? null : new IPEndPoint(IPAddress.Parse(ipEndpoint), 0);
 
-                FieldInfo fieldInfo = typeof(TwitterService).GetField("_credential", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.GetField);
-
-                CredentialCache credentials = fieldInfo.GetValue(CurrentSession.TwitterService) as CredentialCache;
                 DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(_Status));
                 DataContractJsonSerializer serializer2 = new DataContractJsonSerializer(typeof(_FriendsObject));
                 DataContractJsonSerializer serializer3 = new DataContractJsonSerializer(typeof(_EventObject));
 
                 _webRequest = WebRequest.Create("http://stream.twitter.com/1/statuses/filter.json?track=" + Config.TrackString) as HttpWebRequest;
-                _webRequest.Credentials = credentials.GetCredential(new Uri(CurrentSession.TwitterService.ServiceServerPrefix), "Basic");
+                _webRequest.Credentials = new NetworkCredential(CurrentSession.Connections[0].UserInfo.UserName,
+                                                                CurrentSession.Connections[0].UserInfo.Password);
                 _webRequest.PreAuthenticate = true;
                 _webRequest.ServicePoint.ConnectionLimit = 1000;
-                _webRequest.ServicePoint.BindIPEndPointDelegate = (servicePoint, remoteEndPoint, retryCount) => { return _localIPEndpoint; };
                 using (var response = _webRequest.GetResponse())
                 using (var stream = response.GetResponseStream())
                 {
@@ -141,25 +133,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
                         if (statusJson == null || statusJson.id == 0)
                             continue;
 
-                        Status status = new Status()
-                        {
-                            CreatedAt = statusJson.CreatedAt,
-                            _textOriginal = statusJson.text,
-                            Source = statusJson.source,
-                            Id = statusJson.id,
-                            InReplyToUserId =
-                                statusJson.in_reply_to_user_id.HasValue
-                                    ? statusJson.in_reply_to_user_id.Value.ToString()
-                                    : null
-                        };
-                        User user = new User()
-                        {
-                            Id = (Int32)statusJson.user.id,
-                            Protected = statusJson.user.Protected,
-                            ProfileImageUrl = statusJson.user.profile_image_url,
-                            ScreenName = statusJson.user.screen_name
-                        };
-                        status.User = user;
+                        Status status = statusJson.ToStatus();
                         Boolean friendCheckRequired = false;
                         if (Config.AllAtMode ||
                             (statusJson.in_reply_to_user_id.HasValue == false) ||
@@ -225,9 +199,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
         [Browsable(false)]
         public Boolean Enabled { get; set; }
 
-        [Browsable(false)]
-        public String IPEndPoint { get; set; }
-
         [Description("all@と同じ挙動になるかどうかを指定します。")]
         public Boolean AllAtMode { get; set; }
 
@@ -260,6 +231,29 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
         [DataMember]
         public Int64? in_reply_to_user_id { get; set; }
 
+        [DataMember]
+        public _Status retweeted_status { get; set; }
+
+        public Status ToStatus()
+        {
+            return new Status()
+            {
+                CreatedAt = this.CreatedAt,
+                _textOriginal = this.text,
+                Source = this.source,
+                Id = this.id,
+                InReplyToUserId =
+                    this.in_reply_to_user_id.HasValue
+                        ? this.in_reply_to_user_id.Value.ToString()
+                        : null,
+                InReplyToStatusId =
+                    this.in_reply_to.HasValue
+                        ? this.in_reply_to.Value.ToString()
+                        : null,
+                RetweetedStatus = (this.retweeted_status == null) ? null : this.retweeted_status.ToStatus(),
+                User = this.user.ToUser()
+            };
+        }
     }
 
     [DataContract]
@@ -280,7 +274,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
         public String profile_image_url { get; set; }
         [DataMember(Name = "protected")]
         public Boolean Protected { get; set; }
+
+        public User ToUser()
+        {
+            return new User()
+            {
+                Id = (Int32)this.id,
+                Protected = this.Protected,
+                ProfileImageUrl = this.profile_image_url,
+                ScreenName = this.screen_name
+            };
+        }
     }
+
 
     [DataContract]
     class _FriendsObject

@@ -1132,7 +1132,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                             String errorMessage;
                             if (TwitterOAuth.TryGetErrorMessageFromResponseXml(body, out errorMessage))
                             {
-                                SendServerErrorMessage(errorMessage);
+                                SendServerErrorMessage("(OAuth) " + errorMessage);
                                 return;
                             }
                         }

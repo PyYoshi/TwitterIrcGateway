@@ -73,15 +73,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.UserStream
         {
             try
             {
-                FieldInfo fieldInfo = typeof(TwitterService).GetField("_credential", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.GetField);
-
-                CredentialCache credentials = fieldInfo.GetValue(CurrentSession.TwitterService) as CredentialCache;
                 DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(_Status));
                 DataContractJsonSerializer serializer2 = new DataContractJsonSerializer(typeof(_FriendsObject));
                 DataContractJsonSerializer serializer3 = new DataContractJsonSerializer(typeof(_EventObject));
 
                 _webRequest = WebRequest.Create("http://betastream.twitter.com/2b/user.json") as HttpWebRequest;
-                _webRequest.Credentials = credentials.GetCredential(new Uri(CurrentSession.TwitterService.ServiceServerPrefix), "Basic");
+                _webRequest.Credentials = new NetworkCredential(CurrentSession.Connections[0].UserInfo.UserName,
+                                                                CurrentSession.Connections[0].UserInfo.Password);
                 _webRequest.PreAuthenticate = true;
                 _webRequest.ServicePoint.ConnectionLimit = 1000;
                 _webRequest.Timeout = 30*1000;
@@ -138,25 +136,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.UserStream
                         if (Config.IsThroughMyPostFromUserStream && (statusJson.user.id == CurrentSession.TwitterUser.Id))
                             continue;
 
-                        Status status = new Status()
-                                            {
-                                                CreatedAt = statusJson.CreatedAt,
-                                                _textOriginal = statusJson.text,
-                                                Source = statusJson.source,
-                                                Id = statusJson.id,
-                                                InReplyToUserId =
-                                                    statusJson.in_reply_to_user_id.HasValue
-                                                        ? statusJson.in_reply_to_user_id.Value.ToString()
-                                                        : null
-                                            };
-                        User user = new User()
-                                        {
-                                            Id = (Int32) statusJson.user.id,
-                                            Protected = statusJson.user.Protected,
-                                            ProfileImageUrl = statusJson.user.profile_image_url,
-                                            ScreenName = statusJson.user.screen_name
-                                        };
-                        status.User = user;
+                        Status status = statusJson.ToStatus();
                         Boolean friendCheckRequired = false;
                         if (Config.AllAtMode ||
                             (statusJson.in_reply_to_user_id.HasValue == false) ||
@@ -258,6 +238,29 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.UserStream
         [DataMember]
         public Int64? in_reply_to_user_id { get; set; }
 
+        [DataMember]
+        public _Status retweeted_status { get; set; }
+
+        public Status ToStatus()
+        {
+            return new Status()
+            {
+                CreatedAt = this.CreatedAt,
+                _textOriginal = this.text,
+                Source = this.source,
+                Id = this.id,
+                InReplyToUserId =
+                    this.in_reply_to_user_id.HasValue
+                        ? this.in_reply_to_user_id.Value.ToString()
+                        : null,
+                InReplyToStatusId =
+                    this.in_reply_to.HasValue
+                        ? this.in_reply_to.Value.ToString()
+                        : null,
+                RetweetedStatus = (this.retweeted_status == null) ? null : this.retweeted_status.ToStatus(),
+                User = this.user.ToUser()
+            };
+        }
     }
 
     [DataContract]
@@ -278,6 +281,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.UserStream
         public String profile_image_url { get; set; }
         [DataMember(Name = "protected")]
         public Boolean Protected { get; set; }
+
+        public User ToUser()
+        {
+            return new User()
+                       {
+                           Id = (Int32)this.id,
+                           Protected = this.Protected,
+                           ProfileImageUrl = this.profile_image_url,
+                           ScreenName = this.screen_name
+                       };
+        }
     }
 
     [DataContract]

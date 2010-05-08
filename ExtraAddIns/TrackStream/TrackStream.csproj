@@ -160,9 +160,10 @@
     <Compile Include="TrackStreamAddIn.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\TwitterIrcGatewayCore\TwitterIrcGatewayCore.csproj">
+    <ProjectReference Include="..\..\TwitterIrcGatewayCore\TwitterIrcGatewayCore.csproj">
       <Project>{8A256703-BDC7-4E96-8AC3-89A56A2AFB86}</Project>
       <Name>TwitterIrcGatewayCore</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
