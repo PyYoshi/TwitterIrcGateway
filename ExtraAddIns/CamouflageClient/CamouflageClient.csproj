@@ -152,11 +152,6 @@
       <Name>TwitterIrcGatewayCore</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\TwitterIrcGateway\TwitterIrcGateway.csproj">
-      <Project>{1D1391F6-74ED-4FDF-8C27-0BD421D0FF4D}</Project>
-      <Name>TwitterIrcGateway</Name>
-      <Private>False</Private>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
