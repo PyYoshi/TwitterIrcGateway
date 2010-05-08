@@ -21,12 +21,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 
         public override void Initialize()
         {
-            CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<ShortenUrlServiceContext>();
+            CurrentSession.PreSendUpdateStatus += CurrentSession_PreSendUpdateStatus;
+            CurrentSession.AddInsLoadCompleted += (sender, e) =>
+                                                      {
+                                                          CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<ShortenUrlServiceContext>();
+                                                      };
 
             Config = CurrentSession.AddInManager.GetConfig<ShortenUrlServiceConfig>();
             Timeout = DefaultTimeout;
             ShortenUrlProvider = DefaultShortenUrlProvider;
-            CurrentSession.PreSendUpdateStatus += CurrentSession_PreSendUpdateStatus;
 
             SetupProvider();
         }

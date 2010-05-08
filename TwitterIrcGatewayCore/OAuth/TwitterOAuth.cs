@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Web;
 using System.Net;
-using OAuth;
 using System.Security.Principal;
+using System.Text;
+using OAuth;
 
 namespace Misuzilla.Applications.TwitterIrcGateway
 {
@@ -35,22 +34,31 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
         #endregion
     }
-    
+
+    /// <summary>
+    /// TwitterへのOAuthアクセスを提供するクラスです。
+    /// </summary>
     public class TwitterOAuth : OAuthBase
     {
+        public enum HttpMethod
+        {
+            GET, POST
+        }
+
         private String _consumerKey;
         private String _consumerSecret;
         private static readonly Uri RequestTokenUrl = new Uri("https://api.twitter.com/oauth/request_token");
         private static readonly Uri AuthorizeUrl = new Uri("https://api.twitter.com/oauth/authorize");
         private static readonly Uri AccessTokenUrl = new Uri("https://api.twitter.com/oauth/access_token");
 
+        /// <summary>
+        /// リクエストに利用するOAuthトークンを取得・設定します。
+        /// </summary>
         public String Token { get; set; }
+        /// <summary>
+        /// リクエストに利用するOAuthシークレットトークンを取得・設定します。
+        /// </summary>
         public String TokenSecret { get; set; }
-        
-        public enum HttpMethod
-        {
-            GET, POST
-        }
 
         public TwitterOAuth(String consumerKey, String consumerSecret)
         {
@@ -127,16 +135,34 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
         #endregion
 
+        /// <summary>
+        /// リソースへアクセスし、レスポンスボディを返します。
+        /// </summary>
+        /// <param name="requestUrl"></param>
+        /// <param name="method"></param>
+        /// <returns></returns>
         public String Request(Uri requestUrl, HttpMethod method)
         {
             return ReadResponse(RequestInternal(requestUrl, method, Token, TokenSecret));
         }
-
+        /// <summary>
+        /// パラメータを指定してリソースへアクセスし、レスポンスボディを返します。
+        /// </summary>
+        /// <param name="requestUrl"></param>
+        /// <param name="method"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         public String Request(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters)
         {
             return Request(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Uri.EscapeDataString(kv.Key), "=", Uri.EscapeDataString(kv.Value))).ToArray()));
         }
-
+        /// <summary>
+        /// パラメータを指定してリソースへアクセスし、レスポンスボディを返します。
+        /// </summary>
+        /// <param name="requestUrl"></param>
+        /// <param name="method"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         public String Request(Uri requestUrl, HttpMethod method, String parameters)
         {
             UriBuilder newUri = new UriBuilder(requestUrl);
@@ -144,17 +170,34 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             return ReadResponse(RequestInternal(newUri.Uri, method, Token, TokenSecret));
         }
-
+        /// <summary>
+        /// リソースへアクセス開始し、HttpWebRequestを返します。
+        /// </summary>
+        /// <param name="requestUrl"></param>
+        /// <param name="method"></param>
+        /// <returns></returns>
         public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method)
         {
             return RequestInternal(requestUrl, method, Token, TokenSecret);
         }
-
+        /// <summary>
+        /// リソースへアクセス開始し、HttpWebRequestを返します。
+        /// </summary>
+        /// <param name="requestUrl"></param>
+        /// <param name="method"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters)
         {
             return CreateRequest(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Uri.EscapeDataString(kv.Key), "=", Uri.EscapeDataString(kv.Value))).ToArray()));
         }
-
+        /// <summary>
+        /// リソースへアクセス開始し、HttpWebRequestを返します。
+        /// </summary>
+        /// <param name="requestUrl"></param>
+        /// <param name="method"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method, String parameters)
         {
             UriBuilder newUri = new UriBuilder(requestUrl);
@@ -163,6 +206,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return RequestInternal(newUri.Uri, method, Token, TokenSecret);
         }
 
+        #region Internal Implementation
         private HttpWebRequest RequestInternal(Uri requestUrl, HttpMethod method, String token, String tokenSecret)
         {
             String normalizedUrl, queryString;
@@ -178,16 +222,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                                                  out normalizedUrl,
                                                  out queryString);
 
-            queryString += "&oauth_signature=" + Uri.EscapeDataString(signature);
-
-            UriBuilder uriBuilder = new UriBuilder(normalizedUrl)
-                                        {
-                                            Query = queryString
-                                        };
+            queryString += "&oauth_signature=" + UrlEncode(signature);
 
             if (method == HttpMethod.GET)
             {
-                return RequestInternalGet(uriBuilder.Uri.ToString());
+                return RequestInternalGet(normalizedUrl + "?" + queryString);
             }
             else
             {
@@ -226,16 +265,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             return webRequest;
         }
-
-        private class WebClientEx : WebClient
-        {
-            protected override WebRequest GetWebRequest(Uri address)
-            {
-                HttpWebRequest webRequest = base.GetWebRequest(address) as HttpWebRequest;
-                webRequest.ServicePoint.Expect100Continue = false;
-                webRequest.Timeout = 30*1000;
-                return webRequest;
-            }
-        }
+        #endregion
     }
 }
