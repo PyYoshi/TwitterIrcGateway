@@ -85,6 +85,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public Server(Boolean useSslConnection)
         {
+            // for Mono
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+                ServicePointManager.ServerCertificateValidationCallback += delegate { return true; };
+
             ServicePointManager.DefaultConnectionLimit = 1000;
             Authentication = new XAuthAuthentication();
             IsSslConnection = useSslConnection;
