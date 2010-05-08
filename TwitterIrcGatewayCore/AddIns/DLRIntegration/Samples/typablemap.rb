@@ -5,10 +5,10 @@ module Misuzilla::IronRuby
     @@commands = []
 
     def self.setup
-      @@typablemap_proc = Session.AddInManager.GetAddIn(Misuzilla::Applications::TwitterIrcGateway::AddIns::TypableMapSupport.to_clr_type).TypableMapCommands
+      @@typablemap_proc = ::CurrentSession.AddInManager.GetAddIn(Misuzilla::Applications::TwitterIrcGateway::AddIns::TypableMapSupport.to_clr_type).TypableMapCommands
 
       # スクリプトアンロード時にコマンドを削除する
-      Session.AddInManager.GetAddIn(Misuzilla::Applications::TwitterIrcGateway::AddIns::DLRIntegration::DLRIntegrationAddIn.to_clr_type).BeforeUnload do |sender, e|
+      ::CurrentSession.AddInManager.GetAddIn(Misuzilla::Applications::TwitterIrcGateway::AddIns::DLRIntegration::DLRIntegrationAddIn.to_clr_type).BeforeUnload do |sender, e|
         @@commands.each do |command|
           @@typablemap_proc.RemoveCommand(command)
         end
@@ -37,11 +37,11 @@ end
 Misuzilla::IronRuby::TypableMap.register("rt", "ReTweet Command") do |p, msg, status, args|
   System::Diagnostics::Trace.WriteLine("RT: #{status.to_string}")
 
-  Session.RunCheck(Misuzilla::Applications::TwitterIrcGateway::Procedure.new{
-    updated_status = Session.update_status("RT: #{status.text} (via @#{status.user.screen_name})")
-    Session.send_channel_message(updated_status.text)
+  ::CurrentSession.RunCheck(Misuzilla::Applications::TwitterIrcGateway::Procedure.new{
+    updated_status = ::CurrentSession.update_status("RT: #{status.text} (via @#{status.user.screen_name})")
+    ::CurrentSession.send_channel_message(updated_status.text)
   }, System::Action[System::Exception].new{|ex|
-    Session.send_channel_message(msg.receiver, Server.server_nick, "メッセージ送信に失敗しました", false, false, true)
+    ::CurrentSession.send_channel_message(msg.receiver, Server.server_nick, "メッセージ送信に失敗しました", false, false, true)
   })
 
   true # true を返すとハンドルしたことになりステータス更新処理は行われない
