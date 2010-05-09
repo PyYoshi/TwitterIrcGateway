@@ -77,6 +77,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     Config.SaveConfig(_identity.ScreenName.ToString(), config);
                     SendMessage("OAuth用のパスワードを設定しました。IRCクライアントの接続設定のパスワードに設定したパスワードを指定して再接続してください。");
 #endif
+                    Session session = _server.GetSession(_identity.UserId.ToString()) as Session;
+                    if (session != null)
+                    {
+                        session.LoadConfig(); // すでにセッションがある場合には設定を再読込
+                    }
+
                     _isFinished = true;
                 }
             }

@@ -163,6 +163,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return String.Format("Server: LocalEndPoint={0}", _tcpListener.LocalEndpoint);
         }
 
+        public SessionBase GetSession(String sessionId)
+        {
+            lock (_sessions)
+            {
+                if (_sessions.ContainsKey(sessionId))
+                    return _sessions[sessionId];
+            }
+            return null;
+        }
+
         public SessionBase GetOrCreateSession(User user)
         {
             return GetOrCreateSession(user.Id.ToString(), (server, sessionId) => new Session(user, this));
