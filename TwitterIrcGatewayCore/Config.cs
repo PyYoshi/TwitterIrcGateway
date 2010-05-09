@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
@@ -25,6 +26,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public String IMEncryptoPassword { get; set; }
         [Browsable(false)]
         public List<String> DisabledAddInsList { get; set; }
+        [Browsable(false)]
+        public String OAuthUserPasswordHash { get; set; }
+        [Browsable(false)]
+        public String OAuthAccessToken { get; set; }
+        [Browsable(false)]
+        public String OAuthTokenSecret { get; set; }
 
         [Description("TypableMapを有効化または無効化します")]
         public Boolean EnableTypableMap { get; set; }
@@ -310,5 +317,30 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 throw;
             }
         }
+
+        #region Configuration
+        private readonly static String ConfigBasePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "Configs");
+
+        public static String GetConfigPath(String userId, String fileName)
+        {
+            return Path.Combine(Path.Combine(ConfigBasePath, userId), fileName);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public static Config LoadConfig(String userId)
+        {
+            return Config.Load(GetConfigPath(userId, "Config.xml"));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public static void SaveConfig(String userId, Config config)
+        {
+            config.Save(GetConfigPath(userId, "Config.xml"));
+        }
+        #endregion
     }
 }

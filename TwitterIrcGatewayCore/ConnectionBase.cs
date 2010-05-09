@@ -183,7 +183,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         #region 認証
         private void DoAuthenticate()
         {
-            if (String.IsNullOrEmpty(UserInfo.Nick) || String.IsNullOrEmpty(UserInfo.Password) || String.IsNullOrEmpty(UserInfo.UserName))
+            if (String.IsNullOrEmpty(UserInfo.Nick) || String.IsNullOrEmpty(UserInfo.UserName))
                 return;
             
             AuthenticateResult result = OnAuthenticate(UserInfo);

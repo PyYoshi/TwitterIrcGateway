@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace Misuzilla.Applications.TwitterIrcGateway
 {
@@ -212,6 +214,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// 指定した文字列のSHA256 メッセージダイジェストを取得します。
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        public static String GetMesssageDigest(String s)
+        {
+            SHA256 sha256 = new SHA256Managed();
+            return String.Join("", sha256.ComputeHash(Encoding.UTF8.GetBytes(s)).Select(b => b.ToString("x2")).ToArray());
         }
 
         /// <summary>

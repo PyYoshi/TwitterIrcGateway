@@ -24,7 +24,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// セッションの固有のIDを取得します。接続してきたユーザを結びつけるために利用されます。
         /// </summary>
-        public Int32 Id { get; private set; }
+        public String Id { get; private set; }
         /// <summary>
         /// 現在のニックネームを取得・設定します。
         /// </summary>
@@ -56,7 +56,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         public event EventHandler AfterClosing;
 
-        public SessionBase(Int32 id, Server server)
+        public SessionBase(String id, Server server)
         {
             Id = id;
             _server = server;

@@ -72,6 +72,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return AuthorizeUrl + "?oauth_token=" + RequestUnauthorizedToken();
         }
+        public String GetAuthorizeUrl(out String authToken)
+        {
+            authToken = RequestUnauthorizedToken();
+            return AuthorizeUrl + "?oauth_token=" + authToken;
+        }
     
         public String RequestUnauthorizedToken()
         {
@@ -229,6 +234,33 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             {
             }
             return false;
+        }
+
+        public static String GetMessageFromException(Exception e)
+        {
+            if (e is WebException)
+            {
+                using (HttpWebResponse webResponse = (e as WebException).Response as HttpWebResponse)
+                {
+                    if (webResponse != null &&
+                        webResponse.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        try
+                        {
+                            String body = new StreamReader(webResponse.GetResponseStream()).ReadToEnd();
+                            String errorMessage;
+                            if (TwitterOAuth.TryGetErrorMessageFromResponseXml(body, out errorMessage))
+                            {
+                                return "(OAuth) " + errorMessage;
+                            }
+                        }
+                        catch (IOException)
+                        {
+                        }
+                    }
+                }
+            }
+            return e.Message;
         }
 
         #region Internal Implementation

@@ -15,7 +15,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     public class Server : MarshalByRefObject
     {
         private static List<Server> _runningServers = new List<Server>();
-        private static Dictionary<Int32, Session> _sessions;
+        private static Dictionary<String, SessionBase> _sessions;
         
         private TcpListener _tcpListener;
         private Encoding _encoding = Encoding.GetEncoding("ISO-2022-JP");
@@ -66,7 +66,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// 現在存在しているセッション情報のコレクションを取得します。
         /// </summary>
-        public IDictionary<Int32, Session> Sessions
+        public IDictionary<String, SessionBase> Sessions
         {
             get { return _sessions; }
         }
@@ -90,7 +90,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 ServicePointManager.ServerCertificateValidationCallback += delegate { return true; };
 
             ServicePointManager.DefaultConnectionLimit = 1000;
-            Authentication = new XAuthAuthentication();
+            Authentication = new OAuthAuthentication();
             IsSslConnection = useSslConnection;
         }
         
@@ -111,7 +111,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 _runningServers.Add(this);
             }
 
-            _sessions = new Dictionary<Int32, Session>();
+            _sessions = new Dictionary<String, SessionBase>();
 
             TraceLogger.Server.Information(String.Format("Starting IRC Server: IPAddress = {0}, Port = {1}, IsSslConnection={2}", ipAddr, port, IsSslConnection));
             _tcpListener = new TcpListener(ipAddr, port);
@@ -149,7 +149,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 }
                 lock (_sessions)
                 {
-                    List<Session> sessions = new List<Session>(_sessions.Values);
+                    List<SessionBase> sessions = new List<SessionBase>(_sessions.Values);
                     foreach (Session session in sessions)
                     {
                         session.Close();
@@ -162,18 +162,21 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return String.Format("Server: LocalEndPoint={0}", _tcpListener.LocalEndpoint);
         }
-        
-        public Session GetOrCreateSession(User user)
+
+        public SessionBase GetOrCreateSession(User user)
         {
-            Int32 id = user.Id;
+            return GetOrCreateSession(user.Id.ToString(), (server, sessionId) => new Session(user, this));
+        }
+        public SessionBase GetOrCreateSession(String sessionId, Func<Server, String, SessionBase> sessionFactory)
+        {
             lock (_sessions)
             {
-                if (!_sessions.ContainsKey(id))
+                if (!_sessions.ContainsKey(sessionId))
                 {
-                    _sessions[id] = new Session(user, this);
-                    _sessions[id].ConnectionAttached += new EventHandler<ConnectionAttachEventArgs>(Server_ConnectionAttached);
+                    _sessions[sessionId] = sessionFactory(this, sessionId);
+                    _sessions[sessionId].ConnectionAttached += new EventHandler<ConnectionAttachEventArgs>(Server_ConnectionAttached);
                 }
-                return _sessions[id];
+                return _sessions[sessionId];
             }
         }
 

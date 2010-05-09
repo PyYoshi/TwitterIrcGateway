@@ -219,12 +219,14 @@
     <Compile Include="Authentication\ApiAuthentication.cs" />
     <Compile Include="Authentication\IAuthentication.cs" />
     <Compile Include="Authentication\XAuthAuthentication.cs" />
+    <Compile Include="Authentication\OAuthAuthentication.cs" />
     <Compile Include="Connection.cs" />
     <Compile Include="ConnectionBase.cs" />
     <Compile Include="Deferred.cs" />
     <Compile Include="IIrcMessageSendable.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="OAuth\OAuthBase.cs" />
+    <Compile Include="OAuth\OAuthSettingSession.cs" />
     <Compile Include="OAuth\TwitterOAuth.cs" />
     <Compile Include="SessionBase.cs" />
     <Compile Include="SessionIM.cs" />
@@ -256,9 +258,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AddIns\DLRIntegration\Samples\attach_event.py" />
-    <None Include="AddIns\DLRIntegration\Samples\attach_event.rb" />
     <None Include="AddIns\DLRIntegration\Samples\notify_delay.rb" />
-    <None Include="AddIns\DLRIntegration\Samples\scraping.rb" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

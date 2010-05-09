@@ -133,7 +133,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public event EventHandler<TimelineStatusEventArgs> UpdateStatusRequestCommited;
         #endregion
 
-        public Session(User user, Server server) : base(user.Id, server)
+        public Session(User user, Server server) : base(user.Id.ToString(), server)
         {
             _Counter.Increment(ref _Counter.Session);
             _twitterUser = user;
@@ -1120,31 +1120,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         void twitter_CheckError(object sender, ErrorEventArgs e)
         {
             // OAuth の 401 Unauthorized にはなぜかエラーが入ってるのでそれを出す
-            if (e.Exception is WebException)
+            if (TwitterService.OAuthClient != null)
             {
-                using (HttpWebResponse webResponse = (e.Exception as WebException).Response as HttpWebResponse)
-                {
-                    if (TwitterService.OAuthClient != null && webResponse != null && webResponse.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        try
-                        {
-                            String body = new StreamReader(webResponse.GetResponseStream()).ReadToEnd();
-                            String errorMessage;
-                            if (TwitterOAuth.TryGetErrorMessageFromResponseXml(body, out errorMessage))
-                            {
-                                SendServerErrorMessage("(OAuth) " + errorMessage);
-                                return;
-                            }
-                        }
-                        catch(IOException)
-                        {
-                        }
-                    }
-                }
+                SendServerErrorMessage(TwitterOAuth.GetMessageFromException(e.Exception));
             }
-
-            // Default
-            SendServerErrorMessage(e.Exception.Message);
+            else
+            {
+                // Default
+                SendServerErrorMessage(e.Exception.Message);
+            }
         }
 
         void twitter_DirectMessageReceived(object sender, DirectMessageEventArgs e)

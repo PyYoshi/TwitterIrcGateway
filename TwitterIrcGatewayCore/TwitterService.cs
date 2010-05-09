@@ -1279,7 +1279,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             catch (WebException ex)
             {
-                if (ex.Response == null || !(ex.Response is HttpWebResponse) || ((HttpWebResponse)(ex.Response)).StatusCode != HttpStatusCode.NotModified)
+                HttpWebResponse webResponse = ex.Response as HttpWebResponse;
+                if (ex.Response == null || webResponse != null || webResponse.StatusCode != HttpStatusCode.NotModified)
                 {
                     // not-modified 以外
                     OnCheckError(new ErrorEventArgs(ex));
