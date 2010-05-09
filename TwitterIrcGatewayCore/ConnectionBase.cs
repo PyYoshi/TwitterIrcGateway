@@ -229,7 +229,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             if (!(e.Message is UserMessage)) return;
 
-            UserInfo.UserName = e.Message.CommandParams[3];
+            UserInfo.UserName = e.Message.CommandParams[0];
+            UserInfo.RealName = e.Message.CommandParams[3];
             DoAuthenticate();
         }
 
