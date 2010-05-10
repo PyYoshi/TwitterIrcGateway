@@ -35,6 +35,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
             try
             {
                 // xAuth
+                // TODO: Monoの時だけ特別扱いする
+                ServicePointManager.ServerCertificateValidationCallback += delegate { return true; };
                 TwitterOAuth twitterOAuth = new TwitterOAuth(ClientKey, SecretKey);
                 twitterIdentity = twitterOAuth.RequestAccessToken("", "",
                                                                     new Dictionary<string, string>
@@ -49,7 +51,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
             catch (WebException we)
             {
                 // Twitter の接続に失敗
-                connection.SendGatewayServerMessage("* アカウント認証に失敗しました。ユーザ名またはパスワードを確認してください。("+we.Message+")");
+                connection.SendGatewayServerMessage("* アカウント認証に失敗しました。ユーザ名またはパスワードを確認してください。("+ TwitterOAuth.GetMessageFromException(we)+")");
+#if DEBUG
+                foreach (var l in we.ToString().Split('\n')) connection.SendGatewayServerMessage(l);
+#endif
                 return new AuthenticateResult(ErrorReply.ERR_PASSWDMISMATCH, "Password Incorrect");
             }
             catch (Exception ex)

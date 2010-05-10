@@ -95,8 +95,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="twitterIdentity"></param>
         public TwitterService(TwitterIdentity twitterIdentity)
         {
-            OAuthClient = new TwitterOAuth(Authentication.XAuthAuthentication.ClientKey,
-                                           Authentication.XAuthAuthentication.SecretKey)
+            OAuthClient = new TwitterOAuth(Authentication.OAuthAuthentication.ClientKey,
+                                           Authentication.OAuthAuthentication.SecretKey)
                           {
                               Token = twitterIdentity.Token,
                               TokenSecret = twitterIdentity.TokenSecret

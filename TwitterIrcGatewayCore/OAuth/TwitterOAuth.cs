@@ -160,7 +160,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public String Request(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters)
         {
-            return Request(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Uri.EscapeDataString(kv.Key), "=", Uri.EscapeDataString(kv.Value))).ToArray()));
+            return Request(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Utility.UrlEncode(kv.Key), "=", Utility.UrlEncode(kv.Value))).ToArray()));
         }
         /// <summary>
         /// パラメータを指定してリソースへアクセスし、レスポンスボディを返します。
@@ -195,7 +195,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters)
         {
-            return CreateRequest(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Uri.EscapeDataString(kv.Key), "=", Uri.EscapeDataString(kv.Value))).ToArray()));
+            return CreateRequest(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Utility.UrlEncode(kv.Key), "=", Utility.UrlEncode(kv.Value))).ToArray()));
         }
         /// <summary>
         /// リソースへアクセス開始し、HttpWebRequestを返します。
@@ -252,6 +252,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                             if (TwitterOAuth.TryGetErrorMessageFromResponseXml(body, out errorMessage))
                             {
                                 return "(OAuth) " + errorMessage;
+                            }
+                            else
+                            {
+                                return System.Text.RegularExpressions.Regex.Replace(body, "<[^>]+>", "");
                             }
                         }
                         catch (IOException)
