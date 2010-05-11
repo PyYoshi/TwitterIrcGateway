@@ -76,10 +76,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
                 DataContractJsonSerializer serializer2 = new DataContractJsonSerializer(typeof(_FriendsObject));
                 DataContractJsonSerializer serializer3 = new DataContractJsonSerializer(typeof(_EventObject));
 
-                _webRequest = WebRequest.Create("http://stream.twitter.com/1/statuses/filter.json?track=" + Config.TrackString) as HttpWebRequest;
-                _webRequest.Credentials = new NetworkCredential(CurrentSession.Connections[0].UserInfo.UserName,
-                                                                CurrentSession.Connections[0].UserInfo.Password);
-                _webRequest.PreAuthenticate = true;
+                //_webRequest = WebRequest.Create("http://stream.twitter.com/1/statuses/filter.json?track=" + Config.TrackString) as HttpWebRequest;
+                //_webRequest.Credentials = new NetworkCredential(CurrentSession.Connections[0].UserInfo.UserName,
+                //                                                CurrentSession.Connections[0].UserInfo.Password);
+                //_webRequest.PreAuthenticate = true;
+                _webRequest = CurrentSession.TwitterService.OAuthClient.CreateRequest(
+                                                                       new Uri("http://stream.twitter.com/1/statuses/filter.json?track=" + Config.TrackString),
+                                                                       TwitterOAuth.HttpMethod.GET); 
                 _webRequest.ServicePoint.ConnectionLimit = 1000;
                 using (var response = _webRequest.GetResponse())
                 using (var stream = response.GetResponseStream())

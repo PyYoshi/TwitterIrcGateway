@@ -1124,7 +1124,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         void twitter_CheckError(object sender, ErrorEventArgs e)
         {
             // OAuth の 401 Unauthorized にはなぜかエラーが入ってるのでそれを出す
-            if (TwitterService.OAuthClient != null)
+            if (TwitterService != null && TwitterService.OAuthClient != null)
             {
                 SendServerErrorMessage(TwitterOAuth.GetMessageFromException(e.Exception));
             }

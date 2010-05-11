@@ -77,12 +77,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.UserStream
                 DataContractJsonSerializer serializer2 = new DataContractJsonSerializer(typeof(_FriendsObject));
                 DataContractJsonSerializer serializer3 = new DataContractJsonSerializer(typeof(_EventObject));
 
-                _webRequest = WebRequest.Create("http://betastream.twitter.com/2b/user.json") as HttpWebRequest;
-                _webRequest.Credentials = new NetworkCredential(CurrentSession.Connections[0].UserInfo.UserName,
-                                                                CurrentSession.Connections[0].UserInfo.Password);
-                _webRequest.PreAuthenticate = true;
-                _webRequest.ServicePoint.ConnectionLimit = 1000;
-                _webRequest.Timeout = 30*1000;
+                //_webRequest = WebRequest.Create("http://betastream.twitter.com/2b/user.json") as HttpWebRequest;
+                //_webRequest.Credentials = new NetworkCredential(CurrentSession.Connections[0].UserInfo.UserName,
+                //                                                CurrentSession.Connections[0].UserInfo.Password);
+                //_webRequest.PreAuthenticate = true;
+                 _webRequest = CurrentSession.TwitterService.OAuthClient.CreateRequest(
+                                                                        new Uri("http://betastream.twitter.com/2b/user.json"),
+                                                                        TwitterOAuth.HttpMethod.GET);
+                 _webRequest.ServicePoint.ConnectionLimit = 1000;
+                 _webRequest.Timeout = 30 * 1000;
                 using (var response = _webRequest.GetResponse())
                 using (var stream = response.GetResponseStream())
                 {
