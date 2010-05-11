@@ -118,7 +118,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public TwitterIdentity RequestAccessToken(String authToken, String verifier, Dictionary<String, String> parameters)
         {
             UriBuilder newUri = new UriBuilder(AccessTokenUrl);
-            newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + String.Join("&", parameters.Select(kv => String.Concat(Uri.EscapeDataString(kv.Key), "=", Uri.EscapeDataString(kv.Value))).ToArray());
+            newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + String.Join("&", parameters.Select(kv => String.Concat(Utility.UrlEncode(kv.Key), "=", Utility.UrlEncode(kv.Value))).ToArray());
 
             Verifier = verifier;
             String result = ReadResponse(RequestInternal(newUri.Uri, HttpMethod.POST, authToken, String.Empty));

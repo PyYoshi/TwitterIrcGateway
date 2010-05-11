@@ -523,7 +523,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
 
         public void Dispose()
         {
-            CurrentSession.Logger.Information(ConsoleChannelName + ": Dispose");
+            if (CurrentSession != null)
+            {
+                CurrentSession.Logger.Information((ConsoleChannelName ?? "(AnonConsoleChannnelName)") + ": Dispose");
+            }
             if (ContextStack != null)
             {
                 foreach (var ctx in ContextStack)
