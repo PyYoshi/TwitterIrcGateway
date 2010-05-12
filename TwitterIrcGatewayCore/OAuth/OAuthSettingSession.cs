@@ -62,24 +62,33 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 {
                     // step 2
                     String password = privMsg.Content.Trim();
+                    try
+                    {
 #if HOSTING
-                    var config = Config.LoadConfig(_identity.UserId.ToString());
+                        var config = Config.LoadConfig(_identity.UserId.ToString());
 #else
-                    var config = Config.LoadConfig(_identity.ScreenName.ToString());
+                        var config = Config.LoadConfig(_identity.ScreenName.ToString());
 #endif
-                    config.OAuthAccessToken = _identity.Token;
-                    config.OAuthTokenSecret = _identity.TokenSecret;
-                    config.OAuthUserPasswordHash = Utility.GetMesssageDigest(password);
+                        config.OAuthAccessToken = _identity.Token;
+                        config.OAuthTokenSecret = _identity.TokenSecret;
+                        config.OAuthUserPasswordHash = Utility.GetMesssageDigest(password);
 #if HOSTING
-                    Config.SaveConfig(_identity.UserId.ToString(), config);
-                    SendMessage(
-                        String.Format(
-                            "OAuth用のパスワードを設定しました。IRCクライアントの接続設定のユーザID(ログイン名)に {0} を、パスワードに設定したパスワードを指定して再接続してください。",
-                            _identity.UserId));
+                        Config.SaveConfig(_identity.UserId.ToString(), config);
+                        SendMessage(
+                            String.Format(
+                                "OAuth用のパスワードを設定しました。IRCクライアントの接続設定のユーザID(ログイン名)に {0} を、パスワードに設定したパスワードを指定して再接続してください。",
+                                _identity.UserId));
 #else
-                    Config.SaveConfig(_identity.ScreenName.ToString(), config);
-                    SendMessage("OAuth用のパスワードを設定しました。IRCクライアントの接続設定のパスワードに設定したパスワードを指定して再接続してください。");
+                        Config.SaveConfig(_identity.ScreenName.ToString(), config);
+                        SendMessage("OAuth用のパスワードを設定しました。IRCクライアントの接続設定のパスワードに設定したパスワードを指定して再接続してください。");
 #endif
+                    }
+                    catch (IOException ie)
+                    {
+                        SendMessage("設定ファイルにアクセスする際にエラーが発生しました。(" + ie.Message + ")");
+                        return;
+                    }
+
                     Session session = _server.GetSession(_identity.UserId.ToString()) as Session;
                     if (session != null)
                     {

@@ -150,7 +150,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 lock (_sessions)
                 {
                     List<SessionBase> sessions = new List<SessionBase>(_sessions.Values);
-                    foreach (Session session in sessions)
+                    foreach (SessionBase session in sessions)
                     {
                         session.Close();
                     }
