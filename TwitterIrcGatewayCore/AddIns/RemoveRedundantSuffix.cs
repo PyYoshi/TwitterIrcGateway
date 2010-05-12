@@ -70,7 +70,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             {
                 for (var i = 0; i < a1.Length; i++)
                 {
-                    var pos = a2.LastIndexOf(a1.Substring(i));
+                    // HACK: Ordinalを指定しないと特定の条件下でMonoで死ぬ
+                    var pos = a2.LastIndexOf(a1.Substring(i), StringComparison.Ordinal);
                     if (pos > -1)
                     {
                         var suffix = a1.Substring(i);

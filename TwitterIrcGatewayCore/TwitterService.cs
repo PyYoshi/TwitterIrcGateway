@@ -891,11 +891,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         public void Start()
         {
+            // HACK: dueTime を指定しないとMonoで動かないことがある
             _timer.Change(0, Interval * 1000);
-            _timerDirectMessage.Change(0, IntervalDirectMessage * 1000);
+            _timerDirectMessage.Change(1000, IntervalDirectMessage * 1000);
             if (EnableRepliesCheck)
             {
-                _timerReplies.Change(0, IntervalReplies * 1000);
+                _timerReplies.Change(2000, IntervalReplies * 1000);
             }
         }
 
