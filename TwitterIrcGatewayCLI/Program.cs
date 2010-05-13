@@ -77,6 +77,10 @@ namespace TwitterIrcGatewayCLI
             _server.Encoding = encoding;
             _server.ConnectionAttached += new EventHandler<ConnectionAttachEventArgs>(_server_ConnectionAttached);
             _server.Proxy = proxy;
+            if (!String.IsNullOrEmpty(options.OAuthClientKey))
+                _server.OAuthClientKey = options.OAuthClientKey;
+            if (!String.IsNullOrEmpty(options.OAuthSecretKey))
+                _server.OAuthSecretKey = options.OAuthSecretKey;
 
             Console.WriteLine("Start TwitterIrcGateway Server v{0}", typeof(Server).Assembly.GetName().Version);
             Console.WriteLine("[Configuration] BindAddress: {0}, Port: {1}", bindAddress, options.Port);
@@ -100,6 +104,8 @@ namespace TwitterIrcGatewayCLI
             Console.WriteLine("[Configuration] PostFetchMode: {0}", options.PostFetchMode);
             Console.WriteLine("[Configuration] EnableCompression: {0}", options.EnableCompression);
             Console.WriteLine("[Configuration] DisableNoticeAtFirstTime: {0}", options.DisableNoticeAtFirstTime);
+            Console.WriteLine("[Configuration] OAuthClientKey: {0}", options.OAuthClientKey);
+            Console.WriteLine("[Configuration] OAuthSecretKey: {0}", options.OAuthSecretKey);
 
             _server.Start(bindAddress, options.Port);
 
@@ -208,5 +214,13 @@ namespace TwitterIrcGatewayCLI
         [DefaultValue(false)]
         [Description("Disable using NOTICE at first time")]
         public Boolean DisableNoticeAtFirstTime { get; set; }
+
+        [DefaultValue("")]
+        [Description("OAuth Client Key")]
+        public String OAuthClientKey { get; set; }
+
+        [DefaultValue("")]
+        [Description("OAuth Secret Key")]
+        public String OAuthSecretKey { get; set; }
     }
 }

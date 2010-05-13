@@ -274,5 +274,29 @@ namespace Misuzilla.Applications.TwitterIrcGateway {
                 this["DisableNoticeAtFirstTime"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string OAuthClientKey {
+            get {
+                return ((string)(this["OAuthClientKey"]));
+            }
+            set {
+                this["OAuthClientKey"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string OAuthSecretKey {
+            get {
+                return ((string)(this["OAuthSecretKey"]));
+            }
+            set {
+                this["OAuthSecretKey"] = value;
+            }
+        }
     }
 }

@@ -25,6 +25,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         public IWebProxy Proxy = null;
 
+        /// <summary>
+        /// APIアクセスに利用するOAuthのクライアントキー
+        /// </summary>
+        public String OAuthClientKey { get; set; }
+        /// <summary>
+        /// APIアクセスに利用するOAuthのシークレットキー
+        /// </summary>
+        public String OAuthSecretKey { get; set; }
+
         public const String ServerName = "localhost";
         public const String ServerNick = "$TweetIrcGatewayServer$";
 
@@ -88,6 +97,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             // for Mono
             if (Environment.OSVersion.Platform == PlatformID.Unix)
                 ServicePointManager.ServerCertificateValidationCallback += delegate { return true; };
+
+            // OAuth Default Tokens (TweetIrcGateway)
+            OAuthClientKey = "9gGt51Xp3AB8C7wU2Tw";
+            OAuthSecretKey = "74K9CwKANFVLVupHMtHy4fJ3TjAJq58CvxxtAQjoI";
 
             ServicePointManager.DefaultConnectionLimit = 1000;
             Authentication = new OAuthAuthentication();

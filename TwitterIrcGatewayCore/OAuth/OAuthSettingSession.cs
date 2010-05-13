@@ -22,7 +22,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             : base(id, server)
         {
             _server = server;
-            _twitterOAuth = new TwitterOAuth(OAuthAuthentication.ClientKey, OAuthAuthentication.SecretKey);
+            _twitterOAuth = new TwitterOAuth(_server.OAuthClientKey, _server.OAuthSecretKey);
         }
 
         protected override void OnAttached(ConnectionBase connection)

@@ -10,9 +10,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
 {
     public class OAuthAuthentication : IAuthentication
     {
-        public const String ClientKey = "9gGt51Xp3AB8C7wU2Tw";
-        public const String SecretKey = "74K9CwKANFVLVupHMtHy4fJ3TjAJq58CvxxtAQjoI";
-
         #region IAuthentication メンバ
         public AuthenticateResult Authenticate(Server server, Connection connection, UserInfo userInfo)
         {
@@ -56,7 +53,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
                 // ユーザー認証問い合わせをしてみる
                 try
                 {
-                    TwitterOAuth twitterOAuth = new TwitterOAuth(ClientKey, SecretKey)
+                    TwitterOAuth twitterOAuth = new TwitterOAuth(server.OAuthClientKey, server.OAuthSecretKey)
                     {
                         Token = config.OAuthAccessToken,
                         TokenSecret = config.OAuthTokenSecret
@@ -66,7 +63,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
                                                        Token = config.OAuthAccessToken,
                                                        TokenSecret = config.OAuthTokenSecret
                                                    };
-                    TwitterService twitterService = new TwitterService(identity);
+                    TwitterService twitterService = new TwitterService(server.OAuthClientKey, server.OAuthSecretKey, identity);
                     User twitterUser = twitterService.VerifyCredential();
                     identity.ScreenName = twitterUser.ScreenName;
                     identity.UserId = twitterUser.Id;

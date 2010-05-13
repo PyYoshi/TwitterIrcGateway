@@ -66,6 +66,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             _server = new Server();
             _server.ConnectionAttached += new EventHandler<ConnectionAttachEventArgs>(_server_ConnectionAttached);
+            if (!String.IsNullOrEmpty(_settings.OAuthClientKey))
+                _server.OAuthClientKey = _settings.OAuthClientKey;
+            if (!String.IsNullOrEmpty(_settings.OAuthSecretKey))
+                _server.OAuthSecretKey = _settings.OAuthSecretKey;
             try
             {
                 _server.Encoding = (String.Compare(_settings.Charset, "UTF-8", true) == 0)

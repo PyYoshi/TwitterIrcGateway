@@ -479,7 +479,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             //
             if (((Connection)Connections[0]).Identity != null)
             {
-                _twitter = new TwitterService(((Connection)Connections[0]).Identity);
+                _twitter = new TwitterService(_server.OAuthClientKey, _server.OAuthSecretKey, ((Connection)Connections[0]).Identity);
             }
             else
             {

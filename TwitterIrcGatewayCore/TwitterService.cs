@@ -93,10 +93,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// TwitterService クラスのインスタンスをOAuthを利用する設定で初期化します。
         /// </summary>
         /// <param name="twitterIdentity"></param>
-        public TwitterService(TwitterIdentity twitterIdentity)
+        public TwitterService(String clientKey, String secretKey, TwitterIdentity twitterIdentity)
         {
-            OAuthClient = new TwitterOAuth(Authentication.OAuthAuthentication.ClientKey,
-                                           Authentication.OAuthAuthentication.SecretKey)
+            OAuthClient = new TwitterOAuth(clientKey, secretKey)
                           {
                               Token = twitterIdentity.Token,
                               TokenSecret = twitterIdentity.TokenSecret

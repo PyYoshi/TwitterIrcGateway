@@ -10,9 +10,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
 {
     public class XAuthAuthentication : IAuthentication
     {
-        public const String ClientKey = "9gGt51Xp3AB8C7wU2Tw";
-        public const String SecretKey = "74K9CwKANFVLVupHMtHy4fJ3TjAJq58CvxxtAQjoI";
-
         #region IAuthentication メンバ
         public AuthenticateResult Authenticate(Server server, Connection connection, UserInfo userInfo)
         {
@@ -37,7 +34,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
                 // xAuth
                 // TODO: Monoの時だけ特別扱いする
                 ServicePointManager.ServerCertificateValidationCallback += delegate { return true; };
-                TwitterOAuth twitterOAuth = new TwitterOAuth(ClientKey, SecretKey);
+                TwitterOAuth twitterOAuth = new TwitterOAuth(server.OAuthClientKey, server.OAuthSecretKey);
                 twitterIdentity = twitterOAuth.RequestAccessToken("", "",
                                                                     new Dictionary<string, string>
                                                                     {
@@ -45,7 +42,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
                                                                         {"x_auth_username", userInfo.UserName},
                                                                         {"x_auth_password", userInfo.Password}
                                                                     });
-                TwitterService twitter = new TwitterService(twitterIdentity);
+                TwitterService twitter = new TwitterService(server.OAuthClientKey, server.OAuthSecretKey, twitterIdentity);
                 twitterUser = twitter.VerifyCredential();
             }
             catch (WebException we)
