@@ -545,9 +545,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <exception cref="TwitterServiceException"></exception>
         public Statuses GetMentions()
         {
+            return GetMentions(1);
+        }
+
+        /// <summary>
+        /// mentions を取得します。
+        /// </summary>
+        /// <exception cref="WebException"></exception>
+        /// <exception cref="TwitterServiceException"></exception>
+        public Statuses GetMentions(Int64 sinceId)
+        {
             return ExecuteRequest<Statuses>(() =>
             {
-                String responseBody = GET("/statuses/mentions.xml");
+                String responseBody = GET(String.Format("/statuses/mentions.xml?since_id={0}", sinceId));
                 Statuses statuses;
                 if (NilClasses.CanDeserialize(responseBody))
                 {
@@ -945,33 +955,47 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         private Boolean ProcessDropProtection(LinkedList<Int64> statusBuffer, Int64 statusId)
         {
             // 差分チェック
-            if (_enableDropProtection)
+            lock (statusBuffer)
             {
-                lock (statusBuffer)
-                {
-                    if (statusBuffer.Contains(statusId))
-                        return false;
+                if (statusBuffer.Contains(statusId))
+                    return false;
 
-                    statusBuffer.AddLast(statusId);
-                    if (statusBuffer.Count > BufferSize)
-                    {
-                        // 一番古いのを消す
-                        //Status oldStatus = null;
-                        //foreach (Status statTmp in _statusBuffer)
-                        //{
-                        //    if (oldStatus == null || oldStatus.CreatedAt > statTmp.CreatedAt)
-                        //    {
-                        //        oldStatus = statTmp;
-                        //    }
-                        //}
-                        //_statusBuffer.Remove(oldStatus);
-                        statusBuffer.RemoveFirst();
-                    }
+                statusBuffer.AddLast(statusId);
+                if (statusBuffer.Count > BufferSize)
+                {
+                    // 一番古いのを消す
+                    statusBuffer.RemoveFirst();
                 }
             }
 
             return true;
         }
+        /// <summary>
+        /// 最終更新IDを更新します。
+        /// </summary>
+        /// <param name="sinceId"></param>
+        private void UpdateLastAccessStatusId(Status status, ref Int64 sinceId)
+        {
+            if (ProcessDropProtection(_statusBuffer, status.Id))
+            {
+                if (_enableDropProtection)
+                {
+                    // 取りこぼし防止しているときは一番古いID
+                    if (status.Id < sinceId)
+                    {
+                        sinceId = status.Id;
+                    }
+                }
+                else
+                {
+                    if (status.Id > sinceId)
+                    {
+                        sinceId = status.Id;
+                    }
+                }
+            }
+        }
+        
         /// <summary>
         /// ステータスがすでに流されたかどうかをチェックして、流されていない場合に指定されたアクションを実行します。
         /// </summary>
@@ -982,25 +1006,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             if (ProcessDropProtection(_statusBuffer, status.Id))
             {
                 action(status);
-
-                // 最終更新時刻
-                if (_enableDropProtection)
-                {
-                    // 取りこぼし防止しているときは一番古いID
-                    if (status.Id < _lastAccessTimelineId)
-                    {
-                        _lastAccessTimelineId = status.Id;
-                    }
-                }
-                else
-                {
-                    if (status.Id > _lastAccessTimelineId)
-                    {
-                        _lastAccessTimelineId = status.Id;
-                    }
-                }
+                UpdateLastAccessStatusId(status, ref _lastAccessTimelineId);
             }
-        }
+         }
+
         /// <summary>
         /// ステータスがすでに流されたかどうかをチェックして、流されていない場合に指定されたアクションを実行します。
         /// </summary>
@@ -1015,22 +1024,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 ProcessStatus(status, s =>
                 {
                     statusList.Add(status);
-                    // 最終更新時刻
-                    if (_enableDropProtection)
-                    {
-                        // 取りこぼし防止しているときは一番古いID
-                        if (status.Id < _lastAccessTimelineId)
-                        {
-                            _lastAccessTimelineId = status.Id;
-                        }
-                    }
-                    else
-                    {
-                        if (status.Id > _lastAccessTimelineId)
-                        {
-                            _lastAccessTimelineId = status.Id;
-                        }
-                    }
+                    UpdateLastAccessStatusId(status, ref _lastAccessTimelineId);
                 });
             }
 
@@ -1048,32 +1042,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             Statuses tmpStatuses = new Statuses();
             List<Status> statusList = new List<Status>();
-            foreach (Status status in statuses.Status)
+            foreach (Status status in statuses.Status.Where(s => s.Id > _lastAccessRepliesId))
             {
-                if (status.Id < _lastAccessRepliesId)
-                    continue;
-
                 if (ProcessDropProtection(_repliesBuffer, status.Id) && ProcessDropProtection(_statusBuffer, status.Id))
                 {
                     statusList.Add(status);
-
-                    // 最終更新時刻
-                    if (_enableDropProtection)
-                    {
-                        // 取りこぼし防止しているときは一番古い日付
-                        if (status.Id < _lastAccessTimelineId)
-                        {
-                            _lastAccessTimelineId = status.Id;
-                        }
-                    }
-                    else
-                    {
-                        if (status.Id > _lastAccessTimelineId)
-                        {
-                            _lastAccessTimelineId = status.Id;
-                        }
-                    }
                 }
+                UpdateLastAccessStatusId(status, ref _lastAccessTimelineId);
+                UpdateLastAccessStatusId(status, ref _lastAccessRepliesId);
             }
 
             if (statusList.Count == 0)
@@ -1095,7 +1071,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     OnTimelineStatusesReceived(new StatusesUpdatedEventArgs(s, _isFirstTime, friendsCheckRequired));
                 });
 
-                if (_isFirstTime && _enableDropProtection)
+                if (_isFirstTime || !_enableDropProtection)
                 {
                     if (statuses.Status != null && statuses.Status.Length > 0)
                         _lastAccessTimelineId = statuses.Status.Select(s => s.Id).Max();
@@ -1136,7 +1112,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             Boolean friendsCheckRequired = false;
             RunCheck(delegate
             {
-                Statuses statuses = GetMentions();
+                Statuses statuses = GetMentions(_lastAccessRepliesId);
                 Array.Reverse(statuses.Status);
 
                 // 差分チェック
@@ -1148,7 +1124,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     OnRepliesReceived(new StatusesUpdatedEventArgs(s, _isFirstTimeReplies, friendsCheckRequired));
                 });
 
-                if (_isFirstTimeReplies && _enableDropProtection)
+                if (_isFirstTimeReplies || !_enableDropProtection)
                 {
                     if (statuses.Status != null && statuses.Status.Length > 0)
                         _lastAccessRepliesId = statuses.Status.Select(s => s.Id).Max();
@@ -1403,18 +1379,20 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public String GET(String url, Boolean postFetchMode)
         {
+            TraceLogger.Twitter.Information("GET: " + url);
             if (OAuthClient == null)
             {
                 return GETWithBasicAuth(url, postFetchMode);
             }
             else
             {
-                return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.GET);
+                return GETWithOAuth(url);
             }
         }
 
         public String POST(String url, String postData)
         {
+            TraceLogger.Twitter.Information("POST: " + url);
             if (OAuthClient == null)
             {
                 return POSTWithBasicAuth(url, Encoding.UTF8.GetBytes(postData));
@@ -1435,7 +1413,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             else
             {
                 url = ServiceServerPrefix + url;
-                TraceLogger.Twitter.Information("GET: " + url);
                 HttpWebRequest webRequest = CreateHttpWebRequest(url, "GET");
                 HttpWebResponse webResponse = webRequest.GetResponse() as HttpWebResponse;
                 using (StreamReader sr = new StreamReader(GetResponseStream(webResponse)))
@@ -1446,7 +1423,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         private String POSTWithBasicAuth(String url, Byte[] postData)
         {
             url = ServiceServerPrefix + url;
-            TraceLogger.Twitter.Information("POST: " + url);
             HttpWebRequest webRequest = CreateHttpWebRequest(url, "POST");
             using (Stream stream = webRequest.GetRequestStream())
             {
@@ -1482,6 +1458,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             webRequest.Headers["Authorization"] = String.Format("Basic {0}", Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Format("{0}:{1}", cred.UserName, cred.Password))));
 
             return webRequest as HttpWebRequest;
+        }
+        #endregion
+
+        #region OAuth 認証アクセス
+        private String GETWithOAuth(String url)
+        {
+            HttpWebRequest webRequest = OAuthClient.CreateRequest(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.GET);
+            if (EnableCompression)
+                webRequest.Headers["Accept-Encoding"] = "gzip";
+
+            HttpWebResponse webResponse = webRequest.GetResponse() as HttpWebResponse;
+            using (StreamReader sr = new StreamReader(GetResponseStream(webResponse)))
+                return sr.ReadToEnd();
         }
         #endregion
 
