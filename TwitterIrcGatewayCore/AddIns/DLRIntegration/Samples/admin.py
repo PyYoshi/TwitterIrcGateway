@@ -31,9 +31,9 @@ class AdminContext(Context):
 
 	# Implementation
 	def users(self, args):
-		self.Console.NotifyMessage(("現在%d人のユーザが接続しています。" % (CurrentServer.Sessions.Count)))
 		for session in CurrentServer.Sessions.Values:
-			self.Console.NotifyMessage(("%s, Id=%d" % (session, session.Id)))
+			self.Console.NotifyMessage(("%s, Id=%s" % (session, session.Id)))
+		self.Console.NotifyMessage(("現在%d人のユーザが接続しています。" % (CurrentServer.Sessions.Count)))
 
 	def notice(self, args):
 		privMsg = PrivMsgMessage()
