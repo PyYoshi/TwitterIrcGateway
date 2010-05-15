@@ -14,10 +14,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class AddInManager : MarshalByRefObject
     {
+        private static List<Type> _addInTypes;
+        private static List<Type> _configurationTypes;
+        private static XmlSerializer _xmlSerializer;
+
         private List<IAddIn> _addIns;
-        private List<Type> _addInTypes;
-        private List<Type> _configurationTypes;
-        private XmlSerializer _xmlSerializer;
         private Session _session;
         private Server _server;
         private AppDomain _addInDomain;
@@ -43,7 +44,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// 読み込まれているアドインのコレクションを取得します
         /// </summary>
         public ICollection<IAddIn> AddIns { get { return _addIns.AsReadOnly(); } }
-        
+
         /// <summary>
         /// アドインの型のコレクションを取得します
         /// </summary>
@@ -75,6 +76,41 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                                                                }
                                                                return null;
                                                            };
+            
+            // Load AddIn/Configuration Types
+            _addInTypes = new List<Type>();
+            _configurationTypes = new List<Type>();
+            LoadAddInFromAssembly(Assembly.GetExecutingAssembly());
+            String addinsBase = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "AddIns");
+            if (Directory.Exists(addinsBase))
+            {
+                foreach (String fileName in Directory.GetFiles(addinsBase, "*.dll"))
+                {
+                    // 無視する
+                    if (String.Compare(Path.GetFileName(fileName), "Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration.dll", true) == 0)
+                        continue;
+
+                    try
+                    {
+                        Assembly asm = Assembly.LoadFile(fileName);
+                        LoadAddInFromAssembly(asm);
+                    }
+                    catch (Exception e)
+                    {
+                        TraceLogger.Server.Error(e.ToString());
+                    }
+                }
+            }
+
+            // XMLのシリアライザの中で名前がかぶらないようにする
+            XmlAttributeOverrides xmlAttrOverrides = new XmlAttributeOverrides();
+            foreach (var configType in _configurationTypes)
+            {
+                XmlAttributes xmlAttributes = new XmlAttributes();
+                xmlAttributes.XmlType = new XmlTypeAttribute(configType.FullName);
+                xmlAttrOverrides.Add(configType, xmlAttributes);
+            }
+            _xmlSerializer = new XmlSerializer(typeof(Object), xmlAttrOverrides, _configurationTypes.ToArray(), null, null);
         }
 
         //public static AddInManager CreateInstanceWithAppDomain(Server server, Session session)
@@ -93,32 +129,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         public void Load()
         {
-            _addInTypes = new List<Type>();
             _addIns = new List<IAddIn>();
-            _configurationTypes = new List<Type>();
-
-            LoadAddInFromAssembly(Assembly.GetExecutingAssembly());
-            
-            String addinsBase = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "AddIns");
-            if (Directory.Exists(addinsBase))
-            {
-                foreach (String fileName in Directory.GetFiles(addinsBase, "*.dll"))
-                {
-                    // 無視する
-                    if (String.Compare(Path.GetFileName(fileName), "Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration.dll", true) == 0)
-                        continue;
-
-                    try
-                    {
-                        Assembly asm = Assembly.LoadFile(fileName);
-                        LoadAddInFromAssembly(asm);
-                    }
-                    catch (Exception e)
-                    {
-                        _session.Logger.Error(e.ToString());
-                    }
-                }
-            }
 
             Initialize();
         }
@@ -139,16 +150,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 _session.Logger.Information("AddIn: {0}", addInType.FullName);
                 _addIns.Add(Activator.CreateInstance(addInType) as IAddIn);
             }
-
-            // XMLのシリアライザの中で名前がかぶらないようにする
-            XmlAttributeOverrides xmlAttrOverrides = new XmlAttributeOverrides();
-            foreach (var configType in _configurationTypes)
-            {
-                XmlAttributes xmlAttributes = new XmlAttributes();
-                xmlAttributes.XmlType = new XmlTypeAttribute(configType.FullName);
-                xmlAttrOverrides.Add(configType, xmlAttributes);
-            }
-            _xmlSerializer = new XmlSerializer(typeof(Object), xmlAttrOverrides, _configurationTypes.ToArray(), null, null);
 
             foreach (IAddIn addIn in _addIns)
             {
@@ -205,9 +206,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     {
                         try
                         {
-                            Object retVal = _xmlSerializer.Deserialize(fs);
-                            if (retVal != null)
-                                return retVal;
+                            lock (_xmlSerializer)
+                            {
+                                Object retVal = _xmlSerializer.Deserialize(fs);
+                                if (retVal != null)
+                                    return retVal;
+                            }
                         }
                         catch (XmlException xe)
                         {
@@ -263,7 +267,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     {
                         try
                         {
-                            _xmlSerializer.Serialize(fs, o);
+                            lock (_xmlSerializer)
+                            {
+                                _xmlSerializer.Serialize(fs, o);
+                            }
                         }
                         catch (XmlException xe)
                         {
@@ -333,21 +340,27 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         #region Helper Methods
 
-        private void LoadAddInFromAssembly(Assembly asm)
+        private static void LoadAddInFromAssembly(Assembly asm)
         {
-            Type addinType = typeof(IAddIn);
-            Type configurationType = typeof(IConfiguration);
-            foreach (Type t in asm.GetTypes())
+            lock (_addInTypes)
             {
-                if (addinType.IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
+                lock (_configurationTypes)
                 {
-                    // IAddIn
-                    _addInTypes.Add(t);
-                }
-                else if (configurationType.IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
-                {
-                    // IConfiguration
-                    _configurationTypes.Add(t);
+                    Type addinType = typeof(IAddIn);
+                    Type configurationType = typeof(IConfiguration);
+                    foreach (Type t in asm.GetTypes())
+                    {
+                        if (addinType.IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
+                        {
+                            // IAddIn
+                            _addInTypes.Add(t);
+                        }
+                        else if (configurationType.IsAssignableFrom(t) && !t.IsAbstract && t.IsClass)
+                        {
+                            // IConfiguration
+                            _configurationTypes.Add(t);
+                        }
+                    }
                 }
             }
         }

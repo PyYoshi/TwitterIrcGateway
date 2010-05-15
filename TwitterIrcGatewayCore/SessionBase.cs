@@ -118,6 +118,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 }
         }
 
+        public override string ToString()
+        {
+            return String.Format("{0}: Id={1}, Connections=[{2}]", this.GetType().Name, Id, String.Join(", ", (from conn in Connections select conn.UserInfo.EndPoint.ToString()).ToArray()));
+        }
+
         #region オーバーライドして使うメソッド
         /// <summary>
         /// 接続が結びつけられたときの処理です。

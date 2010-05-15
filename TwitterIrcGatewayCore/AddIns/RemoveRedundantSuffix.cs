@@ -9,7 +9,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
     class RemoveRedundantSuffix : AddInBase
     {
         private static readonly Regex _suffixMatchRE = new Regex(@"^(\s*(\＜.{2,}\＞|\<.{2,}\>|\(.{2,}\)|\《.{2,}\》|\【.{2,}\】|\[.{2,}\]|\*.{2,}\*|lang:ja)+)$");
-        private Dictionary<String, LinkedList<String>> _lastStatusFromFriends;
+        private Dictionary<Int32, LinkedList<String>> _lastStatusFromFriends;
         
         public override void Initialize()
         {
@@ -17,14 +17,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             CurrentSession.ConfigChanged += new EventHandler<EventArgs>(Session_ConfigChanged);
 
             if (CurrentSession.Config.EnableRemoveRedundantSuffix)
-                _lastStatusFromFriends = new Dictionary<String, LinkedList<string>>();
+                _lastStatusFromFriends = new Dictionary<Int32, LinkedList<String>>();
         }
 
         void Session_ConfigChanged(object sender, EventArgs e)
         {
             if (_lastStatusFromFriends == null && CurrentSession.Config.EnableRemoveRedundantSuffix)
             {
-                _lastStatusFromFriends = new Dictionary<String, LinkedList<string>>();
+                _lastStatusFromFriends = new Dictionary<Int32, LinkedList<String>>();
             }
             else if (!CurrentSession.Config.EnableRemoveRedundantSuffix)
             {
@@ -37,11 +37,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             // Remove Redundant Suffixes
             if (CurrentSession.Config.EnableRemoveRedundantSuffix)
             {
-                if (!_lastStatusFromFriends.ContainsKey(e.Status.User.ScreenName))
+                if (e.Status.User == null) return;
+
+                if (!_lastStatusFromFriends.ContainsKey(e.Status.User.Id))
                 {
-                    _lastStatusFromFriends[e.Status.User.ScreenName] = new LinkedList<string>();
+                    _lastStatusFromFriends[e.Status.User.Id] = new LinkedList<String>();
                 }
-                LinkedList<String> lastStatusTextsByUId = _lastStatusFromFriends[e.Status.User.ScreenName];
+                LinkedList<String> lastStatusTextsByUId = _lastStatusFromFriends[e.Status.User.Id];
                 String suffix = DetectRedundantSuffix(e.Text, lastStatusTextsByUId);
                 lastStatusTextsByUId.AddLast(e.Text);
                 if (lastStatusTextsByUId.Count > 5)

@@ -8,7 +8,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 {
     class UndoStatusUpdate : AddInBase
     {
-        private List<Status> _lastUpdateStatusList = new List<Status>();
+        private LinkedList<Int64> _lastUpdateStatusList = new LinkedList<Int64>();
         private const String UndoCommandString = "undo";
         private const Int32 MaxUndoCount = 10;
         
@@ -16,10 +16,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
         {
             CurrentSession.PostSendUpdateStatus += (sender, e) =>
                                             {
-                                                _lastUpdateStatusList.Add(e.CreatedStatus);
+                                                _lastUpdateStatusList.AddLast(e.CreatedStatus.Id);
                                                 if (_lastUpdateStatusList.Count > MaxUndoCount)
                                                 {
-                                                    _lastUpdateStatusList.RemoveAt(0);
+                                                    _lastUpdateStatusList.RemoveFirst();
                                                 }
                                             };
             CurrentSession.UpdateStatusRequestReceived += (sender, e) =>
@@ -48,14 +48,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                                                    // 削除する
                                                    try
                                                    {
-                                                       Status status =
-                                                           _lastUpdateStatusList[_lastUpdateStatusList.Count - 1];
-                                                       CurrentSession.TwitterService.DestroyStatus(status.Id);
+                                                       Int64 statusId = _lastUpdateStatusList.Last.Value;
+                                                       Status status = CurrentSession.TwitterService.DestroyStatus(statusId);
                                                        CurrentSession.SendServer(new NoticeMessage(e.ReceivedMessage.Receiver,
                                                                                             String.Format(
                                                                                                 "ステータス \"{0}\" ({1}) を削除しました。",
                                                                                                 status.Text, status.Id)));
-                                                       _lastUpdateStatusList.Remove(status);
+                                                       _lastUpdateStatusList.Remove(statusId);
                                                    }
                                                    catch (TwitterServiceException te)
                                                    {
