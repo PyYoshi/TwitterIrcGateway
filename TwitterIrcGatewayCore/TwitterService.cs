@@ -22,7 +22,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         private IWebProxy _proxy = WebRequest.DefaultWebProxy;
         private String _userName;
         private Boolean _cookieLoginMode = false;
-        private Boolean _enableDropProtection = true;
 
         private Timer _timer;
         private Timer _timerDirectMessage;
@@ -121,6 +120,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             BufferSize = 250;
             EnableCompression = false;
             FriendsPerPageThreshold = 100;
+            EnableDropProtection = true;
 
             POSTFetchMode = false;
         }
@@ -173,8 +173,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         public Boolean EnableDropProtection
         {
-            get { return _enableDropProtection; }
-            set { _enableDropProtection = value; }
+#if HOSTING
+            get { return false; }
+            set { }
+#else
+            get;
+            set;
+#endif
         }
 
         /// <summary>
@@ -978,7 +983,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             if (ProcessDropProtection(_statusBuffer, status.Id))
             {
-                if (_enableDropProtection)
+                if (EnableDropProtection)
                 {
                     // 取りこぼし防止しているときは一番古いID
                     if (status.Id < sinceId)
@@ -1071,7 +1076,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     OnTimelineStatusesReceived(new StatusesUpdatedEventArgs(s, _isFirstTime, friendsCheckRequired));
                 });
 
-                if (_isFirstTime || !_enableDropProtection)
+                if (_isFirstTime || !EnableDropProtection)
                 {
                     if (statuses.Status != null && statuses.Status.Length > 0)
                         _lastAccessTimelineId = statuses.Status.Select(s => s.Id).Max();
@@ -1124,7 +1129,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     OnRepliesReceived(new StatusesUpdatedEventArgs(s, _isFirstTimeReplies, friendsCheckRequired));
                 });
 
-                if (_isFirstTimeReplies || !_enableDropProtection)
+                if (_isFirstTimeReplies || !EnableDropProtection)
                 {
                     if (statuses.Status != null && statuses.Status.Length > 0)
                         _lastAccessRepliesId = statuses.Status.Select(s => s.Id).Max();
