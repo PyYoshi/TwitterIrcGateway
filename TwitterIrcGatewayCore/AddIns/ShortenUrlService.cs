@@ -21,7 +21,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 
         public override void Initialize()
         {
-            CurrentSession.PreSendUpdateStatus += CurrentSession_PreSendUpdateStatus;
+            CurrentSession.UpdateStatusRequestReceived += CurrentSession_UpdateStatusRequestReceived;
             CurrentSession.AddInsLoadCompleted += (sender, e) =>
                                                       {
                                                           CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<ShortenUrlServiceContext>();
@@ -34,7 +34,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             SetupProvider();
         }
 
-        void CurrentSession_PreSendUpdateStatus(object sender, StatusUpdateEventArgs e)
+        void CurrentSession_UpdateStatusRequestReceived(object sender, StatusUpdateEventArgs e)
         {
             e.Text = ShortenUrlInMessage(e.Text, Timeout);
         }
