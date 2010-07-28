@@ -61,6 +61,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
 
         /// <summary>
+        /// 文中の htn.to を展開します。
+        /// タイムアウトするまでの時間は1秒です。
+        /// </summary>
+        /// <param name="message">メッセージ</param>
+        /// <returns></returns>
+        public static String ResolveHatenaInMessage(String message)
+        {
+            return ResolveHatenaInMessage(message, 1000);
+        }
+
+        /// <summary>
         /// 文中の TinyURL を展開します。
         /// </summary>
         /// <param name="message">メッセージ</param>
@@ -88,6 +99,22 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 return ResolveRedirectUrl(m.Groups[1].Value, timeOut);
             }, RegexOptions.IgnoreCase);
         }
+
+        /// <summary>
+        /// 文中の htn.to を展開します。
+        /// </summary>
+        /// <param name="message">メッセージ</param>
+        /// <param name="timeOut">タイムアウトするまでの時間</param>
+        /// <returns></returns>
+        public static String ResolveHatenaInMessage(String message, Int32 timeOut)
+        {
+            // 改行ゴミがついてるのでついでに削除する
+            return Regex.Replace(message, @"(http://(?:htn\.to)/[A-Za-z0-9_/.;%&\-]+)[\r\n]*", delegate(Match m)
+            {
+                return ResolveRedirectUrl(m.Groups[1].Value, timeOut);
+            }, RegexOptions.IgnoreCase);
+        }
+
         /// <summary>
         /// TinyURLをリダイレクト先のURLに展開します。
         /// </summary>

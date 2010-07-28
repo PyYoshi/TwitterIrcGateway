@@ -248,8 +248,7 @@
     <Compile Include="Server.cs" />
     <Compile Include="Session.cs" />
     <Compile Include="TwitterIMService.cs" />
-    <Compile Include="TwitterService.cs">
-    </Compile>
+    <Compile Include="TwitterService.cs" />
     <Compile Include="AddIns\TypableMap\TypableMap.cs" />
     <Compile Include="AddIns\TypableMap\TypableMapCommandProcessor.cs" />
     <Compile Include="UserInfo.cs" />
