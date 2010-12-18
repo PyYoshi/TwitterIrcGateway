@@ -16,7 +16,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
         public IShortenUrlProvider ShortenUrlProvider { get; set; }
         public ShortenUrlServiceConfig Config { get; set; }
 
-        public static readonly Int32 DefaultTimeout = 1000;
+        public static readonly Int32 DefaultTimeout = 3000;
         public static readonly IShortenUrlProvider DefaultShortenUrlProvider = new BitlyShortenUrlProvider("twitterircgateway", "R_968845d36d8350587f0f7d1045668fe3");
 
         public override void Initialize()

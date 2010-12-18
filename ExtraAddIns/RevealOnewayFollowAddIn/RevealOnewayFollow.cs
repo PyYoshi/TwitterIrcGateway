@@ -70,22 +70,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                     {
                         uid = user.Id;
                     }
-#if HOSTING
-                    // 見つからなかったら更にSQL Server
-                    if (uid == 0)
-                    {
-                        // SQL Serverから探してくる
-                        using (TwitterIrcGatewayDataContext ctx = new TwitterIrcGatewayDataContext())
-                        {
-                            var dbUser =
-                                ctx.User.Where(u => u.ScreenName.ToLower() == e.Status.User.ScreenName.ToLower())
-                                        .FirstOrDefault();
-
-                            if (dbUser != null && dbUser.Id != 0)
-                                uid = dbUser.Id;
-                        }
-                    }
-#endif
                 }
                 if (uid != Session.TwitterUser.Id && _followerIds.BinarySearch(uid) < 0)
                 {

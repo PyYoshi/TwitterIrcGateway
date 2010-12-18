@@ -15,7 +15,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                 CurrentSession.PreFilterProcessTimelineStatus += (sender, e) =>
                                                                      {
                                                                          if (e.Status.RetweetedStatus != null)
-                                                                             e.Text = "♻ " + e.Text;
+                                                                         {
+                                                                             e.Text = String.Format("♻ RT @{0}: {1}", e.Status.RetweetedStatus.User.ScreenName, e.Status.RetweetedStatus.Text);
+                                                                         }
                                                                      };
             }
         }
