@@ -55,20 +55,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="message">メッセージ</param>
         /// <returns></returns>
-        public static String ResolveBitlyInMessage(String message)
+        public static String ResolveShortUrlInMessage(String message)
         {
-            return ResolveBitlyInMessage(message, 1000);
-        }
-
-        /// <summary>
-        /// 文中の htn.to を展開します。
-        /// タイムアウトするまでの時間は1秒です。
-        /// </summary>
-        /// <param name="message">メッセージ</param>
-        /// <returns></returns>
-        public static String ResolveHatenaInMessage(String message)
-        {
-            return ResolveHatenaInMessage(message, 1000);
+            return ResolveShortUrlInMessage(message, 1000);
         }
 
         /// <summary>
@@ -86,30 +75,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
 
         /// <summary>
-        /// 文中の bitly を展開します。
+        /// 文中の htn.to, t.co, bit.ly, j.mp を展開します。
         /// </summary>
         /// <param name="message">メッセージ</param>
         /// <param name="timeOut">タイムアウトするまでの時間</param>
         /// <returns></returns>
-        public static String ResolveBitlyInMessage(String message, Int32 timeOut)
+        public static String ResolveShortUrlInMessage(String message, Int32 timeOut)
         {
             // 改行ゴミがついてるのでついでに削除する
-            return Regex.Replace(message, @"(http://(?:bit\.ly|j\.mp)/[A-Za-z0-9_/.;%&\-]+)[\r\n]*", delegate(Match m)
-            {
-                return ResolveRedirectUrl(m.Groups[1].Value, timeOut);
-            }, RegexOptions.IgnoreCase);
-        }
-
-        /// <summary>
-        /// 文中の htn.to を展開します。
-        /// </summary>
-        /// <param name="message">メッセージ</param>
-        /// <param name="timeOut">タイムアウトするまでの時間</param>
-        /// <returns></returns>
-        public static String ResolveHatenaInMessage(String message, Int32 timeOut)
-        {
-            // 改行ゴミがついてるのでついでに削除する
-            return Regex.Replace(message, @"(http://(?:htn\.to)/[A-Za-z0-9_/.;%&\-]+)[\r\n]*", delegate(Match m)
+            return Regex.Replace(message, @"(http://(?:htn\.to|t\.co|bit\.ly|j\.mp)/[A-Za-z0-9_/.;%&\-]+)[\r\n]*", delegate(Match m)
             {
                 return ResolveRedirectUrl(m.Groups[1].Value, timeOut);
             }, RegexOptions.IgnoreCase);

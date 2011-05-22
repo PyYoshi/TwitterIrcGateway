@@ -56,16 +56,24 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             {
                 foreach (var item in _recentStatuses[CurrentSession.Config.ChannelName])
                 {
-                    e.Connection.Send(new NoticeMessage(CurrentSession.Config.ChannelName,
-                                                        String.Format("{0}: {1}", item.DateTime.ToString("HH:mm"),
-                                                                      item.Text)) {SenderNick = item.Sender});
+                    foreach (var line in item.Text.Split('\n'))
+                    {
+                        e.Connection.Send(new NoticeMessage(CurrentSession.Config.ChannelName,
+                                                            String.Format("{0}: {1}", item.DateTime.ToString("HH:mm"),
+                                                                          line.Trim())) { SenderNick = item.Sender });
+                    }
                 }
             }
             foreach (Group group in CurrentSession.Groups.Values.Where(g => g.IsJoined && !g.IsSpecial && _recentStatuses.ContainsKey(g.Name)))
             {
                 foreach (var item in _recentStatuses[group.Name])
                 {
-                    e.Connection.Send(new NoticeMessage(group.Name, String.Format("{0}: {1}", item.DateTime.ToString("HH:mm"), item.Text)) { SenderNick = item.Sender });
+                    foreach (var line in item.Text.Split('\n'))
+                    {
+                        e.Connection.Send(new NoticeMessage(group.Name,
+                                                            String.Format("{0}: {1}", item.DateTime.ToString("HH:mm"),
+                                                                          line.Trim())) { SenderNick = item.Sender });
+                    }
                 }
             }
         }
