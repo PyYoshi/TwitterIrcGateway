@@ -833,11 +833,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     String postMessage = message;
                     
                     // 140文字制限のチェック
-                    if (message.Length > 140)
+                    var tmpMessage = Regex.Replace(message, "https?://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+", "http://t.co/12345678");
+                    if (tmpMessage.Length > 140)
                     {
-                        Int32 overCharCount = message.Length - 140;
+                        Int32 overCharCount = tmpMessage.Length - 140;
                         SendChannelMessage(receiver, Server.ServerNick,
-                                           String.Format("140文字を超えたメッセージの送信は出来ません。{0}文字の超過です。(場所: {1}...)", overCharCount, message.Substring(140, Math.Min(5, overCharCount))), true, false, false, true);
+                                           String.Format("140文字を超えたメッセージの送信は出来ません。{0}文字の超過です。(おおよその場所: {1}...)", overCharCount, tmpMessage.Substring(140, Math.Min(5, overCharCount))), true, false, false, true);
                         return false;
                     }
                     

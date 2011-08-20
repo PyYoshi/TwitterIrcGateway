@@ -394,7 +394,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET(String.Format("/users/show.xml?screen_name={0}", screenName), false);
+                String responseBody = GET(String.Format("/users/show.xml?screen_name={0}&include_entities=true", screenName), false);
                 if (NilClasses.CanDeserialize(responseBody))
                 {
                     return null;
@@ -415,7 +415,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET(String.Format("/users/show.xml?id={0}", id), false);
+                String responseBody = GET(String.Format("/users/show.xml?id={0}&include_entities=true", id), false);
                 if (NilClasses.CanDeserialize(responseBody))
                 {
                     return null;
@@ -448,7 +448,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Statuses>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/friends_timeline.xml?since={0}&count={1}", Utility.UrlEncode(since.ToUniversalTime().ToString("r")), count));
+                String responseBody = GET(String.Format("/statuses/friends_timeline.xml?since={0}&count={1}&include_entities=true", Utility.UrlEncode(since.ToUniversalTime().ToString("r")), count));
                 Statuses statuses;
                 if (NilClasses.CanDeserialize(responseBody))
                 {
@@ -489,7 +489,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Statuses>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/home_timeline.xml?since_id={0}&count={1}", sinceId, count));
+                String responseBody = GET(String.Format("/statuses/home_timeline.xml?since_id={0}&count={1}&include_entities=true", sinceId, count));
                 Statuses statuses;
                 if (NilClasses.CanDeserialize(responseBody))
                 {
@@ -519,7 +519,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/show.xml?id={0}", id), false);
+                String responseBody = GET(String.Format("/statuses/show.xml?id={0}&include_entities=true", id), false);
                 if (NilClasses.CanDeserialize(responseBody))
                 {
                     return null;
@@ -562,7 +562,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Statuses>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/mentions.xml?since_id={0}", sinceId));
+                String responseBody = GET(String.Format("/statuses/mentions.xml?since_id={0}&include_entities=true", sinceId));
                 Statuses statuses;
                 if (NilClasses.CanDeserialize(responseBody))
                 {
@@ -799,7 +799,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/statuses/retweet/{0}.xml", id), "");
+                String responseBody = POST(String.Format("/statuses/retweet/{0}.xml?include_entities=true", id), "");
                 if (NilClasses.CanDeserialize(responseBody))
                 {
                     return null;
@@ -1923,6 +1923,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public Boolean Protected;
         [XmlElement("status")]
         public Status Status;
+        [XmlElement("following")]
+        public Boolean Following;
 
         private static Object _syncObject = new object();
         private static XmlSerializer _serializer = null;
@@ -1986,6 +1988,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public String Favorited;
         [XmlElement("truncated")]
         public Boolean Truncated;
+
+        [XmlElement("retweet_count")]
+        public String RetweetCount;
+        [XmlElement("retweeted")]
+        public Boolean Retweeted;
+
+        [XmlElement("entities")]
+        public Entities Entities;
 
         [XmlIgnore]
         private String _text;
@@ -2075,4 +2085,106 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return String.Format("Status: {0} (ID:{1})", Text, Id.ToString());
         }
     }
+
+
+    /// <summary>
+    /// エンティティの情報を表します。
+    /// </summary>
+    [XmlType("entities")]
+    public class Entities
+    {
+        //[XmlElement("media")]
+        //public MediaEntity[] Media;
+        [XmlArray("urls")]
+        public UrlEntity[] Urls;
+        [XmlArray("hashtags")]
+        public HashtagEntity[] Hashtags;
+    }
+
+    /// <summary>
+    /// URLエンティティの情報を表します。
+    /// </summary>
+    [XmlType("url")]
+    public class UrlEntity
+    {
+        [XmlAttribute("start")]
+        public Int32 Start;
+        [XmlAttribute("end")]
+        public Int32 End;
+        [XmlElement("url")]
+        public String Url;
+        [XmlElement("display_url")]
+        public String DisplayUrl;
+        [XmlElement("expanded_url")]
+        public String ExpandedUrl;
+    }
+
+    /// <summary>
+    /// URLエンティティの情報を表します。
+    /// </summary>
+    [XmlType("hashtag")]
+    public class HashtagEntity
+    {
+        [XmlAttribute("start")]
+        public Int32 Start;
+        [XmlAttribute("end")]
+        public Int32 End;
+        [XmlElement("text")]
+        public String Text;
+    }
+
+
+    ///// <summary>
+    ///// メディアエンティティの情報を表します。
+    ///// </summary>
+    //[XmlType("creative")]
+    //public class MediaEntity
+    //{
+    //    [XmlElement("id")]
+    //    public Int64 Id;
+    //    [XmlElement("id_str")]
+    //    public String IdStr;
+    //    [XmlElement("media_url")]
+    //    public String MediaUrl;
+    //    [XmlElement("media_url_https")]
+    //    public String MediaUrlHttps;
+    //    [XmlElement("url")]
+    //    public String Url;
+    //    [XmlElement("display_url")]
+    //    public String DisplayUrl;
+    //    [XmlElement("expanded_url")]
+    //    public String ExpandedUrl;
+    //    [XmlElement("sizes")]
+    //    public MediaEntity.EntitySizes Sizes;
+    //    [XmlElement("type")]
+    //    public String Type;
+    //    [XmlAttribute("start")]
+    //    public Int32 Start;
+    //    [XmlAttribute("end")]
+    //    public Int32 End;
+
+    //    [XmlType("size")]
+    //    public class EntitySize
+    //    {
+    //        [XmlElement("resize")]
+    //        public String Resize;
+    //        [XmlElement("w")]
+    //        public Int32 W;
+    //        [XmlElement("h")]
+    //        public Int32 H;
+    //    }
+
+    //    [XmlType("size")]
+    //    public class EntitySizes
+    //    {
+    //        [XmlElement("large")]
+    //        public EntitySize Large;
+    //        [XmlElement("medium")]
+    //        public EntitySize Medium;
+    //        [XmlElement("small")]
+    //        public EntitySize Small;
+    //        [XmlElement("thumb")]
+    //        public EntitySize Thumb;
+    //    }
+    //}
 }

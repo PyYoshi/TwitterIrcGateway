@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 {
@@ -19,6 +20,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
         
         void Session_PreFilterProcessTimelineStatus(object sender, TimelineStatusEventArgs e)
         {
+            // t.co (Twitter Url Shortener)
+            if (e.Status.Entities != null && e.Status.Entities.Urls != null && e.Status.Entities.Urls.Length > 0)
+            {
+                foreach (var urlEntity in e.Status.Entities.Urls)
+                {
+                    e.Text = Regex.Replace(e.Text, Regex.Escape(urlEntity.Url), urlEntity.ExpandedUrl);
+                }
+            }
+
             // TinyURL
             e.Text = (CurrentSession.Config.ResolveTinyUrl) ? Utility.ResolveShortUrlInMessage(Utility.ResolveTinyUrlInMessage(e.Text))
                                                             : e.Text;
