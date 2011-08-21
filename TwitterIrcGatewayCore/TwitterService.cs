@@ -174,8 +174,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public Boolean EnableDropProtection
         {
 #if HOSTING
-            get { return false; }
-            set { }
+            get;
+            set;
 #else
             get;
             set;

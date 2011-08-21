@@ -210,6 +210,7 @@
     <Compile Include="AddIns\RecentLog.cs" />
     <Compile Include="AddIns\RemoveRedundantSuffix.cs" />
     <Compile Include="AddIns\ResolveShortUrlServices.cs" />
+    <Compile Include="AddIns\ShortenUrlService.cs" />
     <Compile Include="AddIns\TypableMapSupport.cs" />
     <Compile Include="AddIns\TypableMap\TypableMapStatusRepositoryFactory.cs" />
     <Compile Include="AddIns\TypableMap\TypableMapStatusRepository.cs" />
