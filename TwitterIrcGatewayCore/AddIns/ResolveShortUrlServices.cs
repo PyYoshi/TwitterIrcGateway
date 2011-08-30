@@ -25,7 +25,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             {
                 foreach (var urlEntity in e.Status.Entities.Urls)
                 {
-                    e.Text = Regex.Replace(e.Text, Regex.Escape(urlEntity.Url), urlEntity.ExpandedUrl);
+                    if (!String.IsNullOrEmpty(urlEntity.ExpandedUrl))
+                    {
+                        e.Text = Regex.Replace(e.Text, Regex.Escape(urlEntity.Url), urlEntity.ExpandedUrl);
+                    }
                 }
             }
 
