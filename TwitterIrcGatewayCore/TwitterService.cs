@@ -1923,8 +1923,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public Boolean Protected;
         [XmlElement("status")]
         public Status Status;
-        [XmlElement("following")]
-        public Boolean? Following;
+        //[XmlElement("following")]
+        [XmlIgnore]
+        public Boolean Following;
 
         private static Object _syncObject = new object();
         private static XmlSerializer _serializer = null;
