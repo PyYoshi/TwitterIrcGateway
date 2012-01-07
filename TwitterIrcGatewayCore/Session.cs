@@ -774,6 +774,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public Deferred.DeferredState<Boolean> UpdateStatusWithReceiverDeferred(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
         {
+            return UpdateStatusWithReceiverDeferredInternal(receiver, message, inReplyToId, callback);
+        }
+
+        private Deferred.DeferredState<Boolean> UpdateStatusWithReceiverDeferredInternal(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
+        {
+            // 140文字制限のチェック
+            if (!CheckMessageLength(receiver, message))
+            {
+                return Deferred.DeferredInvoke<Boolean>(() => false, 0);
+            }
+
             Deferred.DeferredState<Boolean> state = Deferred.DeferredInvoke<String, String, Int64, Action<Status>, Boolean>(UpdateStatusWithReceiver, Config.UpdateDelayTime * 1000, (asyncResult) => {
                 Deferred.DeferredState<Boolean> state_ = asyncResult.AsyncState as Deferred.DeferredState<Boolean>;
                 
@@ -822,6 +833,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public Boolean UpdateStatusWithReceiver(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
         {
+            return UpdateStatusWithReceiverInternal(receiver, message, inReplyToId, callback);
+        }
+
+        private Boolean UpdateStatusWithReceiverInternal(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
+        {
             Boolean isRetry = false;
             Boolean succeed = true;
         Retry:
@@ -833,12 +849,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     String postMessage = message;
                     
                     // 140文字制限のチェック
-                    var tmpMessage = Regex.Replace(message, "https?://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+", "http://t.co/12345678");
-                    if (tmpMessage.Length > 140)
+                    if (!CheckMessageLength(receiver, message))
                     {
-                        Int32 overCharCount = tmpMessage.Length - 140;
-                        SendChannelMessage(receiver, Server.ServerNick,
-                                           String.Format("140文字を超えたメッセージの送信は出来ません。{0}文字の超過です。(おおよその場所: {1}...)", overCharCount, tmpMessage.Substring(140, Math.Min(5, overCharCount))), true, false, false, true);
                         return false;
                     }
                     
@@ -900,6 +912,24 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
 
             return succeed;
+        }
+
+        /// <summary>
+        /// メッセージの長さをチェックして、長すぎる場合には送信元チャンネルにメッセージを返します。
+        /// </summary>
+        /// <returns></returns>
+        private Boolean CheckMessageLength(String receiver, String message)
+        {
+            // 140文字制限のチェック
+            var tmpMessage = Regex.Replace(message, "https?://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+", "http://t.co/12345678");
+            if (tmpMessage.Length > 140)
+            {
+                Int32 overCharCount = tmpMessage.Length - 140;
+                SendChannelMessage(receiver, Server.ServerNick,
+                                   String.Format("140文字を超えたメッセージの送信は出来ません。{0}文字の超過です。(おおよその場所: {1}...)", overCharCount, tmpMessage.Substring(140, Math.Min(5, overCharCount))), true, false, false, true);
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
