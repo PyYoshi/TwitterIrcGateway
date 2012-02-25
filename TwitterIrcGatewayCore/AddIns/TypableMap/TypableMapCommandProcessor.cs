@@ -36,6 +36,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
         }
 
         private Dictionary<String, ITypableMapCommand> _commands;
+        public Dictionary<String, ITypableMapCommand> Commands { get { return _commands; } }
+ 
         private Regex _matchRE;
 
         public TypableMapCommandProcessor(ITypableMapStatusRepositoryFactory typableMapFactory, Session session, Int32 typableMapKeySize)
@@ -103,19 +105,39 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
             Match m = _matchRE.Match(message.Content);
             if (m.Success)
             {
-                Status status;
-                if (TypableMap.TryGetValue(m.Groups["tid"].Value, out status))
+                try
                 {
-                    _commands[m.Groups["cmd"].Value].Process(this, message, status, m.Groups["args"].Value);
+                    Status status;
+                    if (TypableMap.TryGetValue(m.Groups["tid"].Value, out status))
+                    {
+                        _commands[m.Groups["cmd"].Value].Process(this, message, status, m.Groups["args"].Value);
+                    }
+                    else
+                    {
+                        Session.SendServer(new NoticeMessage
+                        {
+                            Receiver = message.Receiver,
+                            Content = "エラー: 指定された TypableMap の ID は存在しません。"
+                        });
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
                     Session.SendServer(new NoticeMessage
                     {
                         Receiver = message.Receiver,
-                        Content = "エラー: 指定された TypableMap の ID は存在しません。"
+                        Content = "エラー: TypableMap の処理中にエラーが発生しました。"
                     });
+                    foreach (var line in ex.ToString().Split('\n'))
+                    {
+                        Session.SendServer(new NoticeMessage
+                        {
+                            Receiver = message.Receiver,
+                            Content = line
+                        });
+                    }
                 }
+
                 return true; // 握りつぶす
             }
 

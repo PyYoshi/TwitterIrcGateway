@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
+using Misuzilla.Applications.TwitterIrcGateway.AddIns.Console;
 using Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap;
 
 namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
@@ -21,6 +23,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             CurrentSession.UpdateStatusRequestReceived += new EventHandler<StatusUpdateEventArgs>(Session_UpdateStatusRequestReceived);
             CurrentSession.PreSendMessageTimelineStatus += new EventHandler<TimelineStatusEventArgs>(Session_PreSendMessageTimelineStatus);
             CurrentSession.ConfigChanged += new EventHandler<EventArgs>(Session_ConfigChanged);
+            CurrentSession.AddInsLoadCompleted += (sender, e) =>
+            {
+                CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<TypableMapContext>();
+            };
 
             TypableMapFactory = new TypableMapStatusOnDemandRepositoryFactory(CurrentSession);
             if (CurrentSession.Config.EnableTypableMap)
@@ -72,6 +78,30 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
         void UpdateProcessor()
         {
             _typableMapCommands = new TypableMapCommandProcessor(TypableMapFactory, CurrentSession, CurrentSession.Config.TypableMapKeySize);
+        }
+
+        [Description("TypableMapの設定を行うコンテキストに切り替えます")]
+        public class TypableMapContext : Context
+        {
+            public void ShowAllCommands()
+            {
+                var typableMapAddIn = CurrentSession.AddInManager.GetAddIn<TypableMapSupport>();
+                foreach (var command in typableMapAddIn.TypableMapCommands.Commands)
+                {
+                    var t = command.Value.GetType();
+                    var name = command.Value.GetType().FullName;
+                    var isBuiltin = (t.Assembly == typeof (Server).Assembly);
+                    if (isBuiltin)
+                    {
+                        name = name.Replace("Misuzilla.Applications.TwitterIrcGateway.AddIns", "[BuiltIn AddIns]");
+                    }
+                    if (command.Value is TypableMapCommandProcessor.GenericCommand)
+                    {
+                        name = "(Generic) " + (command.Value as TypableMapCommandProcessor.GenericCommand).Description;
+                    }
+                    Console.NotifyMessage(String.Format("{0}: {1}", command.Key, name));
+                }
+            }
         }
     }
 }
