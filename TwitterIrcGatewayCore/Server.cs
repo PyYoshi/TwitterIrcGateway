@@ -50,6 +50,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// SSLの認証に利用する証明書を取得・設定します
         /// </summary>
         public X509Certificate Certificate { get; set; }
+        /// <summary>
+        /// サーバーが開始された時刻を取得します
+        /// </summary>
+        public DateTime StartTime { get; private set; }
 
         /// <summary>
         /// 新たなセッションが開始されたイベント
@@ -114,6 +118,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="port">接続を待ち受けるポート</param>
         public void Start(IPAddress ipAddr, Int32 port)
         {
+            StartTime = DateTime.Now;
+
             if (IsRunning)
             {
                 throw new InvalidOperationException();

@@ -9,6 +9,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Misuzilla.Applications.TwitterIrcGateway
 {
@@ -1387,11 +1388,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             TraceLogger.Twitter.Information("GET: " + url);
             if (OAuthClient == null)
             {
-                return GETWithBasicAuth(url, postFetchMode);
+                return SanitizeResponseBody(GETWithBasicAuth(url, postFetchMode));
             }
             else
             {
-                return GETWithOAuth(url);
+                return SanitizeResponseBody(GETWithOAuth(url));
             }
         }
 
@@ -1400,12 +1401,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             TraceLogger.Twitter.Information("POST: " + url);
             if (OAuthClient == null)
             {
-                return POSTWithBasicAuth(url, Encoding.UTF8.GetBytes(postData));
+                return SanitizeResponseBody(POSTWithBasicAuth(url, Encoding.UTF8.GetBytes(postData)));
             }
             else
             {
-                return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
+                return SanitizeResponseBody(OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData));
             }
+        }
+
+        private String SanitizeResponseBody(String s)
+        {
+            return s.Replace("\0x1F", "");
         }
 
         #region Basic 認証アクセス

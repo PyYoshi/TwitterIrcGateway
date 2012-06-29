@@ -196,7 +196,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                                  String.Format("Your host is {0}, running version {1}", t.FullName,
                                                t.Assembly.GetName().Version));
                 SendNumericReply(NumericReply.RPL_CREATED
-                                 , String.Format("This server was created {0}", DateTime.Now));
+                                 , String.Format("This server was created {0}", CurrentServer.StartTime));
                 SendNumericReply(NumericReply.RPL_MYINFO,
                                  String.Format("{0} {1}-{2} {3} {4}", Environment.MachineName, t.FullName,
                                                t.Assembly.GetName().Version, "", ""));
