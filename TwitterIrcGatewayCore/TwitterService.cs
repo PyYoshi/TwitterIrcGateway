@@ -1388,11 +1388,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             TraceLogger.Twitter.Information("GET: " + url);
             if (OAuthClient == null)
             {
-                return SanitizeResponseBody(GETWithBasicAuth(url, postFetchMode));
+                return GETWithBasicAuth(url, postFetchMode);
             }
             else
             {
-                return SanitizeResponseBody(GETWithOAuth(url));
+                return GETWithOAuth(url);
             }
         }
 
@@ -1401,18 +1401,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             TraceLogger.Twitter.Information("POST: " + url);
             if (OAuthClient == null)
             {
-                return SanitizeResponseBody(POSTWithBasicAuth(url, Encoding.UTF8.GetBytes(postData)));
+                return POSTWithBasicAuth(url, Encoding.UTF8.GetBytes(postData));
             }
             else
             {
-                return SanitizeResponseBody(OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData));
+                return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
             }
         }
 
-        private String SanitizeResponseBody(String s)
-        {
-            return s.Replace("\0x1F", "");
-        }
 
         #region Basic 認証アクセス
         private String GETWithBasicAuth(String url, Boolean postFetchMode)

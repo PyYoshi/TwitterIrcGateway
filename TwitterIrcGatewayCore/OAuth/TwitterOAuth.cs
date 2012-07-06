@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Security.Principal;
@@ -297,9 +298,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         private String ReadResponse(HttpWebRequest webRequest)
         {
-            using (var response = webRequest.GetResponse())
+            using (var response = webRequest.GetResponse() as HttpWebResponse)
             {
-                StreamReader reader = new StreamReader(response.GetResponseStream());
+                var isGzipped = String.Compare(response.ContentEncoding, "gzip", true) == 0;
+                var reader = new StreamReader(isGzipped ? new GZipStream(response.GetResponseStream(), CompressionMode.Decompress) : response.GetResponseStream());
                 return reader.ReadToEnd();
             }
         }
