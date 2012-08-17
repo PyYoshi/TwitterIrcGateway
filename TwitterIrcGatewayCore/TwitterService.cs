@@ -1921,8 +1921,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public String ProfileImageUrl;
         [XmlElement("url")]
         public String Url;
+
+        [XmlIgnore]
+        public Boolean Protected { get { return ProtectedString.ToUpper() == "true" || ProtectedString == "1"; } set { ProtectedString = value.ToString(); } }
         [XmlElement("protected")]
-        public Boolean Protected;
+        public String ProtectedString { get; set; }
+
         [XmlElement("status")]
         public Status Status;
         //[XmlElement("following")]
@@ -1989,13 +1993,20 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public String Source;
         [XmlElement("favorited")]
         public String Favorited;
+
+
+        [XmlIgnore]
+        public Boolean Truncated { get { return TruncatedString.ToUpper() == "true" || TruncatedString == "1"; } set { TruncatedString = value.ToString(); } }
         [XmlElement("truncated")]
-        public Boolean Truncated;
+        public String TruncatedString { get; set; }
 
         [XmlElement("retweet_count")]
         public String RetweetCount;
+
+        [XmlIgnore]
+        public Boolean Retweeted { get { return RetweetedString.ToUpper() == "true" || RetweetedString == "1"; } set { RetweetedString = value.ToString(); } }
         [XmlElement("retweeted")]
-        public Boolean Retweeted;
+        public String RetweetedString { get; set; }
 
         [XmlElement("entities")]
         public Entities Entities;
