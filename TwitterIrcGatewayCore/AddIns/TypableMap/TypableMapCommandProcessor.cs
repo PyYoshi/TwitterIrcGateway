@@ -295,6 +295,39 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
             #endregion
         }
 
+        public class RtCommand : ITypableMapCommand
+        {
+            #region ITypableMapCommand メンバ
+
+            public string CommandName
+            {
+                get { return "rt"; }
+            }
+
+            public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, string args)
+            {
+                var session = processor.Session;
+                if (args.Trim() == String.Empty)
+                {
+                    // ここに公式RT機能を実装
+                    Status retweetStatus = processor.Session.TwitterService.RetweetStatus(status.Id);
+                    session.SendChannelMessage(msg.Receiver, session.CurrentNick, String.Format(
+                        "ユーザ {0} のステータス \"{1}\"をRetweetしました。",
+                        retweetStatus.User.ScreenName,
+                        retweetStatus.Text), true, false, false, true
+                    );
+                    return true;
+                }
+                else
+                {
+                    session.SendChannelMessage(msg.Receiver, Server.ServerNick, "Retweetにメッセージ添付は有効ではありません。", true, false, false, true);
+                }
+                return true;
+            }
+
+            #endregion
+        }
+
     }
 
 }
