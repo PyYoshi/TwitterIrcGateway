@@ -3,16 +3,16 @@
   <Profiles />
   <Settings>
     <Setting Name="Port" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">16668</Value>
+      <Value Profile="(Default)">16666</Value>
     </Setting>
     <Setting Name="LocalOnly" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="Interval" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">90</Value>
+      <Value Profile="(Default)">60</Value>
     </Setting>
     <Setting Name="Charset" Type="System.String" Scope="User">
-      <Value Profile="(Default)">ISO-2022-JP</Value>
+      <Value Profile="(Default)">UTF-8</Value>
     </Setting>
     <Setting Name="IgnoreWatchError" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -39,7 +39,7 @@
       <Value Profile="(Default)">twitter</Value>
     </Setting>
     <Setting Name="EnableRepliesCheck" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="IntervalReplies" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">300</Value>
@@ -66,10 +66,10 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="OAuthClientKey" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"></Value>
     </Setting>
     <Setting Name="OAuthSecretKey" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)"></Value>
     </Setting>
   </Settings>
 </SettingsFile>

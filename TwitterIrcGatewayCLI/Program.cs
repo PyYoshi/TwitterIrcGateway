@@ -17,7 +17,7 @@ namespace TwitterIrcGatewayCLI
         static void Main(string[] args)
         {
             IPAddress bindAddress = IPAddress.Loopback;
-            Encoding encoding = Encoding.GetEncoding("ISO-2022-JP");
+            Encoding encoding = Encoding.GetEncoding("UTF-8");
             IWebProxy proxy = WebRequest.DefaultWebProxy;
 
             CommandLineOptions options;
@@ -135,7 +135,7 @@ namespace TwitterIrcGatewayCLI
         [Description("IRC server bind IP address")]
         public String BindAddress { get; set; }
 
-        [DefaultValue(90)]
+        [DefaultValue(60)]
         [Description("interval of checking Timeline")]
         public Int32 Interval { get; set; }
 
@@ -143,7 +143,7 @@ namespace TwitterIrcGatewayCLI
         [Description("enable TinyURL resolver")]
         public Boolean ResolveTinyurl { get; set; }
 
-        [DefaultValue("ISO-2022-JP")]
+        [DefaultValue("UTF-8")]
         [Description("IRC message text character encoding")]
         public String Encoding { get; set; }
 
@@ -175,7 +175,7 @@ namespace TwitterIrcGatewayCLI
         [Description("channel name of Twitter timeline")]
         public String ChannelName { get; set; }
 
-        [DefaultValue(false)]
+        [DefaultValue(true)]
         [Description("enable replies check")]
         public Boolean EnableRepliesCheck { get; set; }
 

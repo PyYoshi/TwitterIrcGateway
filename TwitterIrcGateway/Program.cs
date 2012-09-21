@@ -78,7 +78,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             catch (ArgumentException)
             {
-                _server.Encoding = Encoding.GetEncoding("ISO-2022-JP");
+                _server.Encoding = Encoding.GetEncoding("UTF-8");
             }
 
             // start

@@ -74,7 +74,7 @@ namespace Misuzilla.Net.Irc
             {
                 _tcpClient.Connect(host, port);
                 _connected = true;
-                Encoding enc = Encoding.GetEncoding("ISO-2022-JP");
+                Encoding enc = Encoding.GetEncoding("UTF-8");
                 _streamReader = new StreamReader(_tcpClient.GetStream(), enc);
                 _streamWriter = new StreamWriter(_tcpClient.GetStream(), enc);
                 Send(String.Format("USER {0} * * :{1}", userName, (userInfo.Length > 0 ? userInfo : "-")));

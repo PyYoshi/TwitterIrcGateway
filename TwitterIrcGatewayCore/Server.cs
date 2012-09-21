@@ -18,7 +18,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         private static Dictionary<String, SessionBase> _sessions;
         
         private TcpListener _tcpListener;
-        private Encoding _encoding = Encoding.GetEncoding("ISO-2022-JP");
+        private Encoding _encoding = Encoding.GetEncoding("UTF-8");
 
         /// <summary>
         /// APIアクセスに利用するプロクシサーバの設定

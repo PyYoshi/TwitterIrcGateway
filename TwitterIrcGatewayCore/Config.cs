@@ -159,7 +159,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public Config()
         {
             ChannelName = "#Twitter";
-            EnableTypableMap = false;
+            EnableTypableMap = true;
             TypableMapKeyColorNumber = 14;
             TypableMapKeySize = 2;
             EnableRemoveRedundantSuffix = false;
