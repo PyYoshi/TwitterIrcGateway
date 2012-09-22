@@ -313,9 +313,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                     Status retweetStatus = processor.Session.TwitterService.RetweetStatus(status.Id);
                     session.SendChannelMessage(msg.Receiver, session.CurrentNick, String.Format(
                         "ユーザ {0} のステータス \"{1}\"をRetweetしました。",
-                        retweetStatus.User.ScreenName,
+                        retweetStatus.RetweetedStatus.User.ScreenName,
                         retweetStatus.Text), true, false, false, true
                     );
+                    
                     return true;
                 }
                 else
