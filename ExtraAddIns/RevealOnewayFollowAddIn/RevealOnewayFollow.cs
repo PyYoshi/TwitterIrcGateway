@@ -27,7 +27,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
         [Description("片思いチェックで利用しているFollowされているユーザーのリストを更新します。")]
         public void UpdateFollowerIds()
         {
-            RevealOnewayFollow addIn = Session.AddInManager.GetAddIn<RevealOnewayFollow>();
+            RevealOnewayFollow addIn = CurrentSession.AddInManager.GetAddIn<RevealOnewayFollow>();
             Console.NotifyMessage("Follower リストを更新しています。");
             addIn.UpdateFollowerIds();
             Console.NotifyMessage("Follower リストを更新しました。現在、" + addIn.FollowerIds.Count.ToString() + "人のユーザーに Follow されています。");
@@ -50,10 +50,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
         public override void Initialize()
         {
             Config = CurrentSession.AddInManager.GetConfig<RevealOnewayFollowConfig>();
-            Session.AddInsLoadCompleted += (sender, e) =>
+            CurrentSession.AddInsLoadCompleted += (sender, e) =>
                                                {
-                                                   Session.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<RevealOnewayFollowContext>();
-                                                   Session.PreSendMessageTimelineStatus += new EventHandler<TimelineStatusEventArgs>(Session_PreSendMessageTimelineStatus);
+                                                   CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<RevealOnewayFollowContext>();
+                                                   CurrentSession.PreSendMessageTimelineStatus += new EventHandler<TimelineStatusEventArgs>(Session_PreSendMessageTimelineStatus);
                                                };
         }
 
@@ -71,7 +71,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                         uid = user.Id;
                     }
                 }
-                if (uid != Session.TwitterUser.Id && _followerIds.BinarySearch(uid) < 0)
+                if (uid != CurrentSession.TwitterUser.Id && _followerIds.BinarySearch(uid) < 0)
                 {
                     e.Text += " (片思い)";
                 }
@@ -80,14 +80,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 
         internal Boolean UpdateFollowerIds()
         {
-             if (Session.TwitterUser == null)
+            if (CurrentSession.TwitterUser == null)
                  return false;
 
-            return Session.RunCheck(() =>
+            return CurrentSession.RunCheck(() =>
                                  {
                                      try
                                      {
-                                         String idsXml = Session.TwitterService.GET("/followers/ids/" + Session.TwitterUser.Id + ".xml");
+                                         String idsXml = CurrentSession.TwitterService.GET("/followers/ids/" + CurrentSession.TwitterUser.Id + ".xml");
                                          XmlDocument xmlDoc = new XmlDocument();
                                          xmlDoc.LoadXml(idsXml);
 
@@ -102,7 +102,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                                      }
                                      catch (XmlException ex)
                                      {
-                                         Session.SendTwitterGatewayServerMessage("エラー: Follower リストを取得時にエラーが発生しました。("+ex.Message+")");
+                                         CurrentSession.SendTwitterGatewayServerMessage("エラー: Follower リストを取得時にエラーが発生しました。(" + ex.Message + ")");
                                      }
                                  });
         }

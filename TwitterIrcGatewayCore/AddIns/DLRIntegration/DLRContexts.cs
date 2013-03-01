@@ -19,7 +19,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.DLRIntegration
     public class DLRContext : Context
     {
         public override ICollection<ContextInfo> Contexts { get { return (IsEvalEnabled ? new ContextInfo[] { new ContextInfo(typeof(IpyContext)), new ContextInfo(typeof(IrbContext)) } : new ContextInfo[0]); } }
-        public Boolean IsEvalEnabled { get { return File.Exists(Path.Combine(Session.UserConfigDirectory, "EnableDLRDebug")); } }
+        public Boolean IsEvalEnabled { get { return File.Exists(Path.Combine(CurrentSession.UserConfigDirectory, "EnableDLRDebug")); } }
 
         [Description("読み込まれているスクリプトを一覧表示します")]
         public void List()

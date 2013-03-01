@@ -40,7 +40,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
                 if ((String.Compare(t.FullName, addInName, true) == 0) && typeof(IAddIn).IsAssignableFrom(t) &&
                     !t.IsAbstract && t.IsClass)
                 {
-                    if (!Session.Config.DisabledAddInsList.Contains(t.FullName))
+                    if (!CurrentSession.Config.DisabledAddInsList.Contains(t.FullName))
                     {
                         CurrentSession.Config.DisabledAddInsList.Add(t.FullName);
                         CurrentSession.SaveConfig();

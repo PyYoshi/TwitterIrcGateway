@@ -9,19 +9,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.CamouflageClient
         public override void Initialize()
         {
             UpdateClientSource();
-            Session.AddInsLoadCompleted += (sender, e) => Session.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<CamouflageClientContext>();
+            CurrentSession.AddInsLoadCompleted += (sender, e) => CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<CamouflageClientContext>();
         }
     
         public void UpdateClientSource()
         {
-            Configuration config = Session.AddInManager.GetConfig<Configuration>();
+            Configuration config = CurrentSession.AddInManager.GetConfig<Configuration>();
             if (String.IsNullOrEmpty(config.ClientSource))
             {
-                Session.TwitterService.ClientName = "twitterircgateway";
+                CurrentSession.TwitterService.ClientName = "twitterircgateway";
             }
             else
             {
-                Session.TwitterService.ClientName = config.ClientSource;
+                CurrentSession.TwitterService.ClientName = config.ClientSource;
             }
         }
     }
@@ -33,23 +33,23 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.CamouflageClient
         [Description("偽装するクライアントのsourceを設定します")]
         public void ClientSource(String value)
         {
-            Configuration config = Session.AddInManager.GetConfig<Configuration>();
+            Configuration config = CurrentSession.AddInManager.GetConfig<Configuration>();
             if (!String.IsNullOrEmpty(value))
                 config.ClientSource = value;
             Console.NotifyMessage("ClientSource = " + config.ClientSource);
-            Session.AddInManager.SaveConfig(config);
+            CurrentSession.AddInManager.SaveConfig(config);
 
-            Session.AddInManager.GetAddIn<CamouflageClientAddIn>().UpdateClientSource();
+            CurrentSession.AddInManager.GetAddIn<CamouflageClientAddIn>().UpdateClientSource();
         }
         
         [Description("偽装を解除します")]
         public void ResetClientSource()
         {
-            Configuration config = Session.AddInManager.GetConfig<Configuration>();
+            Configuration config = CurrentSession.AddInManager.GetConfig<Configuration>();
             config.ClientSource = String.Empty;
             Console.NotifyMessage("ClientSource = " + config.ClientSource);
-            Session.AddInManager.SaveConfig(config);
-            Session.AddInManager.GetAddIn<CamouflageClientAddIn>().UpdateClientSource();
+            CurrentSession.AddInManager.SaveConfig(config);
+            CurrentSession.AddInManager.GetAddIn<CamouflageClientAddIn>().UpdateClientSource();
         }
     }
 

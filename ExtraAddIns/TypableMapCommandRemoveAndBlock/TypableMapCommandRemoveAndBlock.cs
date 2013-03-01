@@ -9,9 +9,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
     {
         public override void Initialize()
         {
-            Session.AddInsLoadCompleted += (sender, e) =>
+            CurrentSession.AddInsLoadCompleted += (sender, e) =>
                                                {
-                                                   TypableMapCommandProcessor typableMapCmd = Session.AddInManager.GetAddIn<TypableMapSupport>().TypableMapCommands;
+                                                   TypableMapCommandProcessor typableMapCmd = CurrentSession.AddInManager.GetAddIn<TypableMapSupport>().TypableMapCommands;
                                                    if (typableMapCmd != null)
                                                    {
                                                        typableMapCmd.AddCommand(new BlockCommand());
@@ -20,10 +20,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                                                        typableMapCmd.AddCommand(new FollowCommand());
                                                    }
                                                };
-            Session.ConfigChanged += (sender, e) =>
+            CurrentSession.ConfigChanged += (sender, e) =>
                                          {
                                              // 手抜き
-                                             TypableMapCommandProcessor typableMapCmd = Session.AddInManager.GetAddIn<TypableMapSupport>().TypableMapCommands;
+                                             TypableMapCommandProcessor typableMapCmd = CurrentSession.AddInManager.GetAddIn<TypableMapSupport>().TypableMapCommands;
                                              if (typableMapCmd != null)
                                              {
                                                  typableMapCmd.AddCommand(new BlockCommand());

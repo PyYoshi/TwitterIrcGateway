@@ -29,10 +29,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TrackStream
 
         public override void Initialize()
         {
-            Session.AddInsLoadCompleted += (sender, e) =>
+            CurrentSession.AddInsLoadCompleted += (sender, e) =>
             {
-                Session.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<TrackStreamContext>();
-                Config = Session.AddInManager.GetConfig<TrackStreamConfig>();
+                CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<TrackStreamContext>();
+                Config = CurrentSession.AddInManager.GetConfig<TrackStreamConfig>();
                 Setup(Config.Enabled);
             };
         }

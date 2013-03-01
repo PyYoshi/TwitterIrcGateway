@@ -19,7 +19,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
                 return;
             }
 
-            if (!Session.Groups.ContainsKey(channelNameAndUserNames[0]))
+            if (!CurrentSession.Groups.ContainsKey(channelNameAndUserNames[0]))
             {
                 Console.NotifyMessage("エラー: 指定されたグループは存在しません。");
                 return;
@@ -57,7 +57,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
                 return;
             }
 
-            if (!Session.Groups.ContainsKey(channelNameAndUserNames[0]))
+            if (!CurrentSession.Groups.ContainsKey(channelNameAndUserNames[0]))
             {
                 Console.NotifyMessage("エラー: 指定されたグループは存在しません。");
                 return;

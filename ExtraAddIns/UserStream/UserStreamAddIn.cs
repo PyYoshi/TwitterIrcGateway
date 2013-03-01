@@ -31,10 +31,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.UserStream
             ServicePointManager.DefaultConnectionLimit = 1000;
             ServicePointManager.MaxServicePoints = 0;
 
-            Session.AddInsLoadCompleted += (sender, e) =>
+            CurrentSession.AddInsLoadCompleted += (sender, e) =>
                                                {
-                                                   Session.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<UserStreamContext>();
-                                                   Config = Session.AddInManager.GetConfig<UserStreamConfig>();
+                                                   CurrentSession.AddInManager.GetAddIn<ConsoleAddIn>().RegisterContext<UserStreamContext>();
+                                                   Config = CurrentSession.AddInManager.GetConfig<UserStreamConfig>();
                                                    Setup(Config.Enabled);
                                                };
         }

@@ -9,7 +9,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
     {
         public override void Initialize()
         {
-            Type encodingType = Server.Encoding.GetType();
+            Type encodingType = CurrentServer.Encoding.GetType();
             if (encodingType == typeof(UTF8Encoding) || encodingType == typeof(UTF32Encoding) || encodingType == typeof(UnicodeEncoding))
             {
                 CurrentSession.PreProcessTimelineStatus += (sender, e) =>
