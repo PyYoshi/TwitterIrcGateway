@@ -21,6 +21,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
         [Description("Twitter 検索を利用して検索します")]
         public void Search(String keywords)
         {
+            /*
+             * FIXME: Search APIを使用するように変更
+             */
             try
             {
                 XmlDocument xmlDoc = new XmlDocument();
@@ -146,7 +149,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
         {
             BlockOrUnblock(false, screenNames);
         }
-        //
+        // Context
+
+        /*
+         * TODO: 
+         * 以下のContextを追加
+         *  ・スパム報告/スパム報告取り消し
+         */
+
         [Browsable(false)]
         private void FollowOrRemove(Boolean follow, String[] screenNames)
         {
