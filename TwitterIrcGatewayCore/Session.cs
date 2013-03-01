@@ -921,7 +921,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         private Boolean CheckMessageLength(String receiver, String message)
         {
             // 140文字制限のチェック
-            var tmpMessage = Regex.Replace(message, "https?://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+", "http://t.co/12345678");
+            var tmpMessage = Regex.Replace(message, "https?://[-_.!~*'()a-zA-Z0-9;/?:@&=+$,%#]+", "https://t.co/0123456789");
             if (tmpMessage.Length > 140)
             {
                 Int32 overCharCount = tmpMessage.Length - 140;
