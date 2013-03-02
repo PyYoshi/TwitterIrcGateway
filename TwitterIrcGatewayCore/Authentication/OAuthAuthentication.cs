@@ -29,12 +29,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
             {
                 var config = Config.LoadConfig(userInfo.UserName); // HOSTING => 番号的 ID になる
 
-                // xAuth fallback
-                if (true && String.IsNullOrEmpty(config.OAuthUserPasswordHash))
-                {
-                    return new XAuthAuthentication().Authenticate(server, connection, userInfo);
-                }
-
                 connection.SendGatewayServerMessage("* アカウント認証を確認しています(OAuth)...");
                 // OAuth 設定未設定
                 if (String.IsNullOrEmpty(config.OAuthAccessToken) || String.IsNullOrEmpty(config.OAuthTokenSecret))

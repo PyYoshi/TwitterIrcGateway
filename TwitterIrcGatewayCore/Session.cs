@@ -135,7 +135,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public Session(User user, Server server) : base(user.Id.ToString(), server)
         {
-            _Counter.Increment(ref _Counter.Session);
             _twitterUser = user;
             
             _groups = new Groups();
@@ -1807,7 +1806,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     _twitter = null;
                 }
                 GC.SuppressFinalize(this);
-                _Counter.Decrement(ref _Counter.Session);
                 _isDisposed = true;
             }
         }
