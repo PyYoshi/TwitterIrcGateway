@@ -229,7 +229,6 @@
     <Compile Include="OAuth\OAuthSettingSession.cs" />
     <Compile Include="OAuth\TwitterOAuth.cs" />
     <Compile Include="SessionBase.cs" />
-    <Compile Include="SessionIM.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="EventArgs.cs" />
     <Compile Include="EventManagedProxy.cs" />
@@ -247,7 +246,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Session.cs" />
-    <Compile Include="TwitterIMService.cs" />
     <Compile Include="TwitterService.cs" />
     <Compile Include="AddIns\TypableMap\TypableMap.cs" />
     <Compile Include="AddIns\TypableMap\TypableMapCommandProcessor.cs" />

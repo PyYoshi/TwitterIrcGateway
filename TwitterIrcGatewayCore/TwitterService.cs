@@ -107,7 +107,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         private void Initialize()
         {
-            _Counter.Increment(ref _Counter.TwitterService);
             _timer = new Timer(new TimerCallback(OnTimerCallback), null, Timeout.Infinite, Timeout.Infinite);
             _timerDirectMessage = new Timer(new TimerCallback(OnTimerCallbackDirectMessage), null, Timeout.Infinite, Timeout.Infinite);
             _timerReplies = new Timer(new TimerCallback(OnTimerCallbackReplies), null, Timeout.Infinite, Timeout.Infinite);
@@ -128,7 +127,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         ~TwitterService()
         {
-            //_Counter.Decrement(ref _Counter.TwitterService);
             Dispose();
         }
 
@@ -1337,7 +1335,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
 
             GC.SuppressFinalize(this);
-            _Counter.Decrement(ref _Counter.TwitterService);
         }
 
         #endregion
@@ -1726,14 +1723,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 return _serializer;
             }
         }
-        public DirectMessages()
-        {
-            _Counter.Increment(ref _Counter.DirectMessages);
-        }
-        ~DirectMessages()
-        {
-            _Counter.Decrement(ref _Counter.DirectMessages);
-        }
     }
 
     /// <summary>
@@ -1776,14 +1765,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 return Utility.ParseDateTime(_createdAt);
             }
         }
-        public DirectMessage()
-        {
-            _Counter.Increment(ref _Counter.DirectMessage);
-        }
-        ~DirectMessage()
-        {
-            _Counter.Decrement(ref _Counter.DirectMessage);
-        }
 
         public override string ToString()
         {
@@ -1819,14 +1800,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             {
                 return _serializer;
             }
-        }
-        public Statuses()
-        {
-            _Counter.Increment(ref _Counter.Statuses);
-        }
-        ~Statuses()
-        {
-            _Counter.Decrement(ref _Counter.Statuses);
         }
     }
 
@@ -1894,14 +1867,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 return _serializer;
             }
         }
-        public Users()
-        {
-            _Counter.Increment(ref _Counter.Users);
-        }
-        ~Users()
-        {
-            _Counter.Decrement(ref _Counter.Users);
-        }
     }
 
     [XmlType("user")]
@@ -1951,16 +1916,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             {
                 return _serializer;
             }
-        }
-
-
-        public User()
-        {
-            _Counter.Increment(ref _Counter.User);
-        }
-        ~User()
-        {
-            _Counter.Decrement(ref _Counter.User);
         }
 
         public override string ToString()
@@ -2061,15 +2016,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     _serializer = new XmlSerializer(typeof(Status));
                 }
             }
-        }
-
-        public Status()
-        {
-            _Counter.Increment(ref _Counter.Status);
-        }
-        ~Status()
-        {
-            _Counter.Decrement(ref _Counter.Status);
         }
 
         public static XmlSerializer Serializer
