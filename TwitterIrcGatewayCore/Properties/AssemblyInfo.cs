@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Misuzilla.org")]
 [assembly: AssemblyProduct("TwitterIrcGatewayCore")]
-[assembly: AssemblyCopyright("Copyright (C) Misuzilla.org 2010")]
+[assembly: AssemblyCopyright("Copyright (C) Misuzilla.org 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 //
 // すべての値を指定するか、下のように '*' を使ってリビジョンおよびビルド番号を 
 // 既定値にすることができます:
-[assembly: AssemblyVersion("2.5.*")]
+[assembly: AssemblyVersion("2.6.*")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
