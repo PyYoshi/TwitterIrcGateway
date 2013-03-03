@@ -894,9 +894,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 String content = String.Format("メッセージ送信に失敗しました({0})" + (!isRetry ? "/リトライします。" : ""), TwitterOAuth.GetMessageFromException(ex).Replace("\n", " "));
                 SendChannelMessage(receiver, Server.ServerNick, content, true, false, false, true);
 #if DEBUG
-                var retVal = new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
-                foreach (var line in retVal.Split('\n'))
-                    SendChannelMessage(receiver, Server.ServerNick, line.Trim(), true, false, false, true);
+                //var retVal = new StreamReader(ex.Response.GetResponseStream()).ReadToEnd();
+                //foreach (var line in retVal.Split('\n'))
+                //    SendChannelMessage(receiver, Server.ServerNick, line.Trim(), true, false, false, true);
 #endif
                 // 一回だけリトライするよ
                 if (!isRetry)

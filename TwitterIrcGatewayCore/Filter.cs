@@ -496,10 +496,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                         sw.WriteLine("Filter-Drop: {0}", args.Drop);
                         sw.WriteLine("Filter-IRCMessageType: {0}", args.IRCMessageType);
                         sw.WriteLine();
-                        if (XmlMode)
-                            Status.Serializer.Serialize(sw, args.Status);
-                        else
-                            sw.WriteLine(args.Content);
+                        sw.WriteLine(args.Content);
                         sw.Close();
 
                         String output = process.StandardOutput.ReadToEnd();

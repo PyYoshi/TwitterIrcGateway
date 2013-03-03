@@ -185,38 +185,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                 Value = value;
             }
         }
-
-        private User CloneUser(User originalUser)
-        {
-            return new User
-                       {
-                            Description = originalUser.Description,
-                            Id= originalUser.Id,
-                            Location = originalUser.Location,
-                            Name = originalUser.Name,
-                            ProfileImageUrl = originalUser.ProfileImageUrl,
-                            Protected = originalUser.Protected,
-                            ScreenName = originalUser.ScreenName,
-                            Status = null,
-                            Url = originalUser.Url
-                       };
-        }
-        private Status CloneStatus(Status originalStatus)
-        {
-            return new Status
-                       {
-                           Id = originalStatus.Id,
-                           _createdAtOriginal = originalStatus._createdAtOriginal,
-                           _textOriginal = originalStatus._textOriginal,
-                           Favorited = originalStatus.Favorited,
-                           InReplyToStatusId = originalStatus.InReplyToStatusId,
-                           InReplyToUserId = originalStatus.InReplyToUserId,
-                           RetweetedStatus = null,
-                           Source = originalStatus.Source,
-                           Truncated = originalStatus.Truncated,
-                           User = null
-                       };
-        }
     }
 
 

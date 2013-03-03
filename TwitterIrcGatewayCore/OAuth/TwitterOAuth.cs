@@ -38,6 +38,21 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     }
 
     /// <summary>
+    /// リクエストのレートリミット情報のクラスです。
+    /// </summary>
+    public class RateLimitStatus
+    {
+        /// <summary>
+        /// リセットされる時刻。
+        /// </summary>
+        public DateTime Reset { get; set; }
+        /// <summary>
+        /// 残り回数
+        /// </summary>
+        public Int32 Remaining { get; set; }
+    }
+
+    /// <summary>
     /// TwitterへのOAuthアクセスを提供するクラスです。
     /// </summary>
     public class TwitterOAuth : OAuthBase
@@ -47,6 +62,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             GET, POST
         }
 
+        private Dictionary<String, RateLimitStatus> _rateLimitStatuses = new Dictionary<String, RateLimitStatus>();
         private String _consumerKey;
         private String _consumerSecret;
         private static readonly Uri RequestTokenUrl = new Uri("https://api.twitter.com/oauth/request_token");
@@ -61,6 +77,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// リクエストに利用するOAuthシークレットトークンを取得・設定します。
         /// </summary>
         public String TokenSecret { get; set; }
+        /// <summary>
+        /// gzip圧縮を有効にするかどうかを取得・設定します。
+        /// </summary>
+        public Boolean EnableCompression { get; set; }
 
         public TwitterOAuth(String consumerKey, String consumerSecret)
         {
@@ -97,7 +117,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public TwitterIdentity RequestAccessToken(String authToken, String verifier)
         {
             Verifier = verifier;
-            String result = ReadResponse(RequestInternal(AccessTokenUrl, HttpMethod.GET, authToken, String.Empty));
+            String result = ReadResponse(RequestInternal(AccessTokenUrl, HttpMethod.GET, authToken, String.Empty, String.Empty));
             NameValueCollection returnValues = new NameValueCollection();
             foreach (var keyValue in result.Split(new[] { '&', ';' }, StringSplitOptions.RemoveEmptyEntries)
                                            .Select(p => p.Split(new[] { '=' }, 2))
@@ -122,7 +142,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + String.Join("&", parameters.Select(kv => String.Concat(Utility.UrlEncode(kv.Key), "=", Utility.UrlEncode(kv.Value))).ToArray());
 
             Verifier = verifier;
-            String result = ReadResponse(RequestInternal(newUri.Uri, HttpMethod.POST, authToken, String.Empty));
+            String result = ReadResponse(RequestInternal(newUri.Uri, HttpMethod.POST, authToken, String.Empty, String.Empty));
             NameValueCollection returnValues = new NameValueCollection();
             foreach (var keyValue in result.Split(new[] { '&', ';' }, StringSplitOptions.RemoveEmptyEntries)
                                            .Select(p => p.Split(new[] { '=' }, 2))
@@ -143,6 +163,22 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         #endregion
 
         /// <summary>
+        /// リソースへのアクセスが可能かどうかを返します。
+        /// </summary>
+        /// <param name="resourceEndpoint"></param>
+        /// <returns></returns>
+        public Boolean CanRequest(String resourceEndpoint)
+        {
+            if (_rateLimitStatuses.ContainsKey(resourceEndpoint))
+            {
+                // リセット時間を過ぎているか残り回数が0以上だったら。
+                return (_rateLimitStatuses[resourceEndpoint].Reset <= DateTime.Now ||
+                        _rateLimitStatuses[resourceEndpoint].Remaining > 0);
+            }
+            return true;
+        }
+
+        /// <summary>
         /// リソースへアクセスし、レスポンスボディを返します。
         /// </summary>
         /// <param name="requestUrl"></param>
@@ -150,8 +186,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public String Request(Uri requestUrl, HttpMethod method)
         {
-            return ReadResponse(RequestInternal(requestUrl, method, Token, TokenSecret));
+            return ReadResponse(RequestInternal(requestUrl, method, Token, TokenSecret, String.Empty));
         }
+
         /// <summary>
         /// パラメータを指定してリソースへアクセスし、レスポンスボディを返します。
         /// </summary>
@@ -161,22 +198,81 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public String Request(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters)
         {
-            return Request(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Utility.UrlEncode(kv.Key), "=", Utility.UrlEncode(kv.Value))).ToArray()));
+            return Request(requestUrl, method, parameters, null);
         }
+
         /// <summary>
         /// パラメータを指定してリソースへアクセスし、レスポンスボディを返します。
         /// </summary>
         /// <param name="requestUrl"></param>
         /// <param name="method"></param>
         /// <param name="parameters"></param>
+        /// <param name="resourceEndpoint">Rate Limitを認識するためのリソースのエンドポイント</param>
         /// <returns></returns>
-        public String Request(Uri requestUrl, HttpMethod method, String parameters)
+        public String Request(Uri requestUrl, HttpMethod method, Dictionary<String, String> parameters, String resourceEndpoint)
         {
-            UriBuilder newUri = new UriBuilder(requestUrl);
-            newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + parameters;
-
-            return ReadResponse(RequestInternal(newUri.Uri, method, Token, TokenSecret));
+            return Request(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Utility.UrlEncode(kv.Key), "=", Utility.UrlEncode(kv.Value))).ToArray()), resourceEndpoint);
         }
+
+        /// <summary>
+        /// パラメータを指定してリソースへアクセスし、レスポンスボディを返します。
+        /// </summary>
+        /// <param name="requestUrl"></param>
+        /// <param name="method"></param>
+        /// <param name="parameters"></param>
+        /// <param name="resourceEndpoint">Rate Limitを認識するためのリソースのエンドポイント</param>
+        /// <returns></returns>
+        public String Request(Uri requestUrl, HttpMethod method, String parameters, String resourceEndpoint)
+        {
+            if (!String.IsNullOrEmpty(resourceEndpoint))
+            {
+                if (!CanRequest(resourceEndpoint))
+                {
+                    throw new Exception(String.Format("APIのリクエスト制限回数に達しました。({0}; リセット:{1})", resourceEndpoint, _rateLimitStatuses[resourceEndpoint].Reset));
+                }
+            }
+
+            UriBuilder newUri = new UriBuilder(requestUrl);
+            if (method == HttpMethod.GET)
+                newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + parameters;
+
+            var request = RequestInternal(newUri.Uri, method, Token, TokenSecret, parameters);
+
+            Action<WebResponse> setRateLimit = (WebResponse response) =>
+                                   {
+                                       if (!String.IsNullOrEmpty(resourceEndpoint))
+                                       {
+                                           if (!_rateLimitStatuses.ContainsKey(resourceEndpoint))
+                                           {
+                                               _rateLimitStatuses[resourceEndpoint] = new RateLimitStatus() { Remaining = 15 };
+                                           }
+                                           Int32 remaining;
+                                           Int64 reset;
+                                           if (Int32.TryParse(response.Headers["X-Rate-Limit-Remaining"], out remaining))
+                                           {
+                                               _rateLimitStatuses[resourceEndpoint].Remaining = remaining;
+                                           }
+                                           if (Int64.TryParse(response.Headers["X-Rate-Limit-Reset"], out reset))
+                                           {
+                                               _rateLimitStatuses[resourceEndpoint].Reset = new DateTime(1970, 1, 1, 0, 0, 0, 0).ToLocalTime().AddSeconds(reset);
+                                           }
+                                       }
+                                   };
+
+            try
+            {
+                var response = request.GetResponse();
+                setRateLimit(response);
+            }
+            catch (WebException webE)
+            {
+                setRateLimit(webE.Response);
+                throw;
+            }
+
+            return ReadResponse(request);
+        }
+
         /// <summary>
         /// リソースへアクセス開始し、HttpWebRequestを返します。
         /// </summary>
@@ -185,8 +281,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <returns></returns>
         public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method)
         {
-            return RequestInternal(requestUrl, method, Token, TokenSecret);
+            return RequestInternal(requestUrl, method, Token, TokenSecret, String.Empty);
         }
+        
         /// <summary>
         /// リソースへアクセス開始し、HttpWebRequestを返します。
         /// </summary>
@@ -198,6 +295,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return CreateRequest(requestUrl, method, String.Join("&", parameters.Select(kv => String.Concat(Utility.UrlEncode(kv.Key), "=", Utility.UrlEncode(kv.Value))).ToArray()));
         }
+
         /// <summary>
         /// リソースへアクセス開始し、HttpWebRequestを返します。
         /// </summary>
@@ -208,33 +306,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public HttpWebRequest CreateRequest(Uri requestUrl, HttpMethod method, String parameters)
         {
             UriBuilder newUri = new UriBuilder(requestUrl);
-            newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + parameters;
+            if (method == HttpMethod.GET)
+                newUri.Query = ((newUri.Query.Length > 0) ? "&" : "") + parameters;
 
-            return RequestInternal(newUri.Uri, method, Token, TokenSecret);
-        }
-
-        public static Boolean TryGetErrorMessageFromResponseXml(String xmlBody, out String errorMessage)
-        {
-            errorMessage = null;
-
-            if (xmlBody.IndexOf("<error>") == -1)
-                 return false;
-
-            try
-            {
-                XmlDocument xmlDoc = new XmlDocument();
-                xmlDoc.LoadXml(xmlBody);
-                XmlNode node = xmlDoc.SelectSingleNode("//hash/error");
-                if (node != null)
-                {
-                    errorMessage = node.InnerText;
-                    return true;
-                }
-            }
-            catch (XmlException)
-            {
-            }
-            return false;
+            return RequestInternal(newUri.Uri, method, Token, TokenSecret, parameters);
         }
 
         public static String GetMessageFromException(Exception e)
@@ -249,15 +324,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                         try
                         {
                             String body = new StreamReader(webResponse.GetResponseStream()).ReadToEnd();
-                            String errorMessage;
-                            if (TwitterOAuth.TryGetErrorMessageFromResponseXml(body, out errorMessage))
-                            {
-                                return "(OAuth) " + errorMessage;
-                            }
-                            else
-                            {
-                                return System.Text.RegularExpressions.Regex.Replace(body, "<[^>]+>", "");
-                            }
+                            return body;
                         }
                         catch (IOException)
                         {
@@ -269,7 +336,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
 
         #region Internal Implementation
-        private HttpWebRequest RequestInternal(Uri requestUrl, HttpMethod method, String token, String tokenSecret)
+        private HttpWebRequest RequestInternal(Uri requestUrl, HttpMethod method, String token, String tokenSecret, String parameters)
         {
             String normalizedUrl, queryString;
 
@@ -292,7 +359,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             else
             {
-                return RequestInternalPost(normalizedUrl, queryString);
+                return RequestInternalPost(normalizedUrl, queryString, parameters);
             }
         }
 
@@ -312,15 +379,22 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             webRequest.ServicePoint.Expect100Continue = false;
             webRequest.Timeout = 30 * 1000;
             webRequest.Method = "GET";
+            if (EnableCompression)
+                webRequest.Headers["Accept-Encoding"] = "gzip";
             return webRequest;
         }
 
-        private HttpWebRequest RequestInternalPost(String uri, String postData)
+        private HttpWebRequest RequestInternalPost(String uri, String authKeys, String postData)
         {
             HttpWebRequest webRequest = WebRequest.Create(uri) as HttpWebRequest;
             webRequest.ServicePoint.Expect100Continue = false;
             webRequest.Timeout = 30 * 1000;
             webRequest.Method = "POST";
+            webRequest.Headers["Authorization"] = "OAuth realm=\"\", " +
+                                                  String.Join(", ",
+                                                    authKeys.Split('&')
+                                                            .Select(x => { var parts = x.Split(new[] { '=' }, 2); return parts[0] + "=\"" + parts[1] + "\""; })
+                                                            .ToArray());
             using (Stream stream = webRequest.GetRequestStream())
             {
                 Byte[] bytes = new UTF8Encoding(false).GetBytes(postData);

@@ -8,9 +8,7 @@ using System.Text;
 using System.Xml;
 using System.Linq;
 using Misuzilla.Applications.TwitterIrcGateway.AddIns.Console;
-#if HOSTING
-using Misuzilla.Applications.TwitterIrcGateway.AddIns.SqlServerDataStore;
-#endif
+using Newtonsoft.Json;
 
 namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 {
@@ -80,31 +78,39 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
 
         internal Boolean UpdateFollowerIds()
         {
-             if (Session.TwitterUser == null)
-                 return false;
+            if (Session.TwitterUser == null)
+                return false;
 
+            Int64 cursor = 0;
+            var page = 0;
             return Session.RunCheck(() =>
                                  {
-                                     try
-                                     {
-                                         String idsXml = Session.TwitterService.GET("/followers/ids/" + Session.TwitterUser.Id + ".xml");
-                                         XmlDocument xmlDoc = new XmlDocument();
-                                         xmlDoc.LoadXml(idsXml);
+                                    var followerIds = new List<Int32>();
+                                    while (cursor != 0 && page > 0)
+                                    {
+                                        String responseBody = Session.TwitterService.GETv1_1("/followers/ids/" + Session.TwitterUser.Id + ".json", "/followers/ids");
+                                        var idsJson = JsonConvert.DeserializeObject<FollowersIds>(responseBody);
+                                        if (idsJson == null)
+                                            break;
 
-                                         List<Int32> followerIds = new List<Int32>();
-                                         foreach (XmlElement E in xmlDoc.GetElementsByTagName("id"))
-                                         {
-                                             followerIds.Add(Int32.Parse(E.InnerText));
-                                         }
-                                         followerIds.Sort();
-                                         _followerIds = followerIds;
-                                         CurrentSession.Logger.Information("Followers: "+_followerIds.Count.ToString());
-                                     }
-                                     catch (XmlException ex)
-                                     {
-                                         Session.SendTwitterGatewayServerMessage("エラー: Follower リストを取得時にエラーが発生しました。("+ex.Message+")");
-                                     }
+                                        followerIds.AddRange(idsJson.Ids);
+
+                                        --page;
+                                        cursor = idsJson.NextCursor;
+                                    }
+                                    followerIds.Sort();
+                                    _followerIds = followerIds;
+                                    CurrentSession.Logger.Information("Followers: "+_followerIds.Count.ToString());
                                  });
         }
+    }
+
+    internal class FollowersIds
+    {
+        [JsonProperty("ids")]
+        public List<Int32> Ids { get; set; }
+
+        [JsonProperty("next_cursor")]
+        public Int64 NextCursor { get; set; }
     }
 }

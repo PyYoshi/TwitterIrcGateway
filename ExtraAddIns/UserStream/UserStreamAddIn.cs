@@ -249,7 +249,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.UserStream
             return new Status()
             {
                 CreatedAt = this.CreatedAt,
-                _textOriginal = this.text,
+                Text = this.text,
                 Source = this.source,
                 Id = this.id,
                 InReplyToUserId =

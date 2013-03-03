@@ -16,6 +16,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class Config : MarshalByRefObject, IConfiguration
     {
+        private Int32 _interval;
+
         [Browsable(false)]
         public String IMServiceServerName { get; set; }
         [Browsable(false)]
@@ -52,7 +54,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// チェックする間隔を指定します。
         /// </summary>
         [Description("チェックする間隔を指定します。")]
-        public Int32 Interval { get; set; }
+        public Int32 Interval { get { return _interval; } set { _interval = Math.Min(60, value); } }
         /// <summary>
         /// ダイレクトメッセージをチェックする間隔を指定します。
         /// </summary>

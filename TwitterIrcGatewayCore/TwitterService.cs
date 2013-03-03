@@ -10,6 +10,7 @@ using System.Xml.Serialization;
 using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace Misuzilla.Applications.TwitterIrcGateway
 {
@@ -62,7 +63,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// Twitter APIのエンドポイントURLのプレフィックスを取得・設定します。
         /// </summary>
-        public String ServiceServerPrefix = "http://api.twitter.com/1";
+        public String ServiceServerPrefix = "https://api.twitter.com/1";
+        public String ServiceServerPrefixV1_1 = "https://api.twitter.com/1.1";
         /// <summary>
         /// リクエストのRefererを取得・設定します。
         /// </summary>
@@ -265,23 +267,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// 認証情報を問い合わせます。
         /// </summary>
-        /// <return cref="User">ユーザー情報</returns>
+        /// <returns cref="User">ユーザー情報</returns>
         /// <exception cref="WebException"></exception>
         /// <exception cref="TwitterServiceException"></exception>
         public User VerifyCredential()
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET("/account/verify_credentials.xml", false);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    User user = User.Serializer.Deserialize(new StringReader(responseBody)) as User;
-                    return user;
-                }
+                String responseBody = GETv1_1("/account/verify_credentials.json");
+                return JsonConvert.DeserializeObject<User>(responseBody);
             });
         }
 
@@ -306,16 +300,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return ExecuteRequest<Status>(() =>
             {
                 String postData = String.Format("status={0}&source={1}{2}", encodedMessage, ClientName, (inReplyToStatusId != 0 ? "&in_reply_to_status_id=" + inReplyToStatusId : ""));
-                String responseBody = POST("/statuses/update.xml", postData);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    Status status = Status.Serializer.Deserialize(new StringReader(responseBody)) as Status;
-                    return status;
-                }
+                String responseBody = POSTv1_1("/statuses/update.json", postData);
+                return JsonConvert.DeserializeObject<Status>(responseBody);
             });
         }
 
@@ -330,7 +316,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             ExecuteRequest(() =>
             {
                 String postData = String.Format("user={0}&text={1}", GetUserId(screenName), encodedMessage);
-                String responseBody = POST("/direct_messages/new.xml", postData);
+                String responseBody = POSTv1_1("/direct_messages/new.json", postData);
+                return JsonConvert.DeserializeObject<DirectMessage>(responseBody);
             });
         }
 
@@ -358,26 +345,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             {
                 while (cursor != 0 && page > 0)
                 {
-                    String responseBody = GET(String.Format("/statuses/friends.xml?cursor={0}&lite=true", cursor));
-                    if (NilClasses.CanDeserialize(responseBody))
-                    {
-                        return users.ToArray();
-                    }
-                    else
-                    {
-                        UsersList usersList = UsersList.Serializer.Deserialize(new StringReader(responseBody)) as UsersList;
-                        if (usersList == null || usersList.Users == null || usersList.Users.User == null || usersList.Users.User.Length == 0)
-                        {
-                            return users.ToArray();
-                        }
-                        else
-                        {
-                            users.AddRange(usersList.Users.User);
-                        }
+                    String responseBody = GETv1_1(String.Format("/friends/list.json?cursor={0}", cursor), "/friends/list");
+                    var usersList = JsonConvert.DeserializeObject<UsersList>(responseBody);
+                    if (usersList == null)
+                        break;
 
-                        --page;
-                        cursor = usersList.NextCursor;
-                    }
+                    users.AddRange(usersList.Users);
+
+                    --page;
+                    cursor = usersList.NextCursor;
                 }
 
                 return users.ToArray();
@@ -393,16 +369,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET(String.Format("/users/show.xml?screen_name={0}&include_entities=true", screenName), false);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    User user = User.Serializer.Deserialize(new StringReader(responseBody)) as User;
-                    return user;
-                }
+                String responseBody = GETv1_1(String.Format("/users/show.json?screen_name={0}&include_entities=true", screenName), "/users/show");
+                return JsonConvert.DeserializeObject<User>(responseBody);
             });
         }
         /// <summary>
@@ -414,16 +382,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET(String.Format("/users/show.xml?id={0}&include_entities=true", id), false);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    User user = User.Serializer.Deserialize(new StringReader(responseBody)) as User;
-                    return user;
-                }
+                String responseBody = GETv1_1(String.Format("/users/show.json?id={0}&include_entities=true", id), "/users/show");
+                return JsonConvert.DeserializeObject<User>(responseBody);
             });
         }
 
@@ -447,22 +407,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Statuses>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/friends_timeline.xml?since={0}&count={1}&include_entities=true", Utility.UrlEncode(since.ToUniversalTime().ToString("r")), count));
-                Statuses statuses;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    statuses = new Statuses();
-                    statuses.Status = new Status[0];
-                }
-                else
-                {
-                    statuses = Statuses.Serializer.Deserialize(new StringReader(responseBody)) as Statuses;
-                    if (statuses == null || statuses.Status == null)
-                    {
-                        statuses = new Statuses();
-                        statuses.Status = new Status[0];
-                    }
-                }
+                String responseBody = GETv1_1(String.Format("/statuses/home_timeline.json?since={0}&count={1}&include_entities=true", Utility.UrlEncode(since.ToUniversalTime().ToString("r")), count), "/statuses/home_timeline");
+                Statuses statuses = new Statuses();
+                statuses.Status = JsonConvert.DeserializeObject<List<Status>>(responseBody).ToArray();
 
                 return statuses;
             });
@@ -488,22 +435,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Statuses>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/home_timeline.xml?since_id={0}&count={1}&include_entities=true", sinceId, count));
-                Statuses statuses;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    statuses = new Statuses();
-                    statuses.Status = new Status[0];
-                }
-                else
-                {
-                    statuses = Statuses.Serializer.Deserialize(new StringReader(responseBody)) as Statuses;
-                    if (statuses == null || statuses.Status == null)
-                    {
-                        statuses = new Statuses();
-                        statuses.Status = new Status[0];
-                    }
-                }
+                String responseBody = GETv1_1(String.Format("/statuses/home_timeline.json?since_id={0}&count={1}&include_entities=true", sinceId, count), "/statuses/home_timeline");
+                Statuses statuses = new Statuses();
+                statuses.Status = JsonConvert.DeserializeObject<List<Status>>(responseBody).ToArray();
 
                 return statuses;
             });
@@ -518,16 +452,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/show.xml?id={0}&include_entities=true", id), false);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    Status status = Status.Serializer.Deserialize(new StringReader(responseBody)) as Status;
-                    return status;
-                }
+                String responseBody = GETv1_1(String.Format("/statuses/show.json?id={0}&include_entities=true", id), "/statuses/show/:id");
+                return JsonConvert.DeserializeObject<Status>(responseBody);
             });
         }
 
@@ -561,22 +487,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Statuses>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/mentions.xml?since_id={0}&include_entities=true", sinceId));
-                Statuses statuses;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    statuses = new Statuses();
-                    statuses.Status = new Status[0];
-                }
-                else
-                {
-                    statuses = Statuses.Serializer.Deserialize(new StringReader(responseBody)) as Statuses;
-                    if (statuses == null || statuses.Status == null)
-                    {
-                        statuses = new Statuses();
-                        statuses.Status = new Status[0];
-                    }
-                }
+                String responseBody = GETv1_1(String.Format("/statuses/mentions_timeline.json?since_id={0}&include_entities=true", sinceId), "/statuses/mentions_timeline");
+                Statuses statuses = new Statuses();
+                statuses.Status = JsonConvert.DeserializeObject<List<Status>>(responseBody).ToArray();
 
                 return statuses;
             });
@@ -592,24 +505,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<DirectMessages>(() =>
             {
-                // Cookie ではダメ
-                String responseBody = GET(String.Format("/direct_messages.xml?since={0}", Utility.UrlEncode(since.ToUniversalTime().ToString("r"))), false);
-                DirectMessages directMessages;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    // 空
-                    directMessages = new DirectMessages();
-                    directMessages.DirectMessage = new DirectMessage[0];
-                }
-                else
-                {
-                    directMessages = DirectMessages.Serializer.Deserialize(new StringReader(responseBody)) as DirectMessages;
-                    if (directMessages == null || directMessages.DirectMessage == null)
-                    {
-                        directMessages = new DirectMessages();
-                        directMessages.DirectMessage = new DirectMessage[0];
-                    }
-                }
+                String responseBody = GETv1_1(String.Format("/direct_messages.json?since={0}", Utility.UrlEncode(since.ToUniversalTime().ToString("r"))), "/direct_messages");
+                DirectMessages directMessages = new DirectMessages();
+                directMessages.DirectMessage = JsonConvert.DeserializeObject<List<DirectMessage>>(responseBody).ToArray();
 
                 return directMessages;
             });
@@ -625,24 +523,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<DirectMessages>(() =>
             {
-                // Cookie ではダメ
-                String responseBody = GET(String.Format("/direct_messages.xml?since_id={0}", sinceId), false);
-                DirectMessages directMessages;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    // 空
-                    directMessages = new DirectMessages();
-                    directMessages.DirectMessage = new DirectMessage[0];
-                }
-                else
-                {
-                    directMessages = DirectMessages.Serializer.Deserialize(new StringReader(responseBody)) as DirectMessages;
-                    if (directMessages == null || directMessages.DirectMessage == null)
-                    {
-                        directMessages = new DirectMessages();
-                        directMessages.DirectMessage = new DirectMessage[0];
-                    }
-                }
+                String responseBody = GETv1_1(String.Format("/direct_messages.json?since_id={0}", sinceId), "/direct_messages");
+                DirectMessages directMessages = new DirectMessages();
+                directMessages.DirectMessage = JsonConvert.DeserializeObject<List<DirectMessage>>(responseBody).ToArray();
 
                 return directMessages;
             });
@@ -663,22 +546,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 if (count > 0)
                     sb.Append("count=").Append(count).Append("&");
 
-                String responseBody = GET(String.Format("/statuses/user_timeline.xml?screen_name={0}&{1}", screenName, sb.ToString()));
-                Statuses statuses;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    statuses = new Statuses();
-                    statuses.Status = new Status[0];
-                }
-                else
-                {
-                    statuses = Statuses.Serializer.Deserialize(new StringReader(responseBody)) as Statuses;
-                    if (statuses == null || statuses.Status == null)
-                    {
-                        statuses = new Statuses();
-                        statuses.Status = new Status[0];
-                    }
-                }
+                String responseBody = GETv1_1(String.Format("/statuses/user_timeline.json?screen_name={0}&{1}", screenName, sb.ToString()), "/statuses/user_timeline");
+                Statuses statuses = new Statuses();
+                statuses.Status = JsonConvert.DeserializeObject<List<Status>>(responseBody).ToArray();
 
                 return statuses;
             });
@@ -699,22 +569,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 if (page > 0)
                     sb.Append("page=").Append(page).Append("&");
 
-                String responseBody = GET(String.Format("/favorites.xml?screen_name={0}&{1}", screenName, sb.ToString()));
-                Statuses statuses;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    statuses = new Statuses();
-                    statuses.Status = new Status[0];
-                }
-                else
-                {
-                    statuses = Statuses.Serializer.Deserialize(new StringReader(responseBody)) as Statuses;
-                    if (statuses == null || statuses.Status == null)
-                    {
-                        statuses = new Statuses();
-                        statuses.Status = new Status[0];
-                    }
-                }
+                String responseBody = GETv1_1(String.Format("/favorites/list.json?screen_name={0}&{1}", screenName, sb.ToString()), "/favorites/list");
+                Statuses statuses = new Statuses();
+                statuses.Status = JsonConvert.DeserializeObject<List<Status>>(responseBody).ToArray();
 
                 return statuses;
             });
@@ -729,17 +586,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/favorites/create/{0}.xml", id), "");
-                Status status;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    status = Status.Serializer.Deserialize(new StringReader(responseBody)) as Status;
-                    return status;
-                }
+                String responseBody = POSTv1_1("/favorites/create.json", "id=" + id);
+                return JsonConvert.DeserializeObject<Status>(responseBody);
             });
         }
 
@@ -752,17 +600,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/favorites/destroy/{0}.xml", id), "");
-                Status status;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    status = Status.Serializer.Deserialize(new StringReader(responseBody)) as Status;
-                    return status;
-                }
+                String responseBody = POSTv1_1("/favorites/destroy.json", "id=" + id);
+                return JsonConvert.DeserializeObject<Status>(responseBody);
             });
         }
 
@@ -775,17 +614,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/statuses/destroy/{0}.xml", id), "");
-                Status status;
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    status = Status.Serializer.Deserialize(new StringReader(responseBody)) as Status;
-                    return status;
-                }
+                String responseBody = POSTv1_1(String.Format("/statuses/destroy/{0}.json", id), "");
+                return JsonConvert.DeserializeObject<Status>(responseBody);
             });
         }
 
@@ -798,16 +628,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Status>(() =>
             {
-                String responseBody = POST(String.Format("/statuses/retweet/{0}.xml?include_entities=true", id), "");
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    Status status = Status.Serializer.Deserialize(new StringReader(responseBody)) as Status;
-                    return status;
-                }
+                String responseBody = POSTv1_1(String.Format("/statuses/retweet/{0}.json?include_entities=true", id), "");
+                return JsonConvert.DeserializeObject<Status>(responseBody);
             });
         }
 
@@ -821,15 +643,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/friendships/create.xml", postData);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    return User.Serializer.Deserialize(new StringReader(responseBody)) as User;
-                }
+                String responseBody = POSTv1_1("/friendships/create.json", postData);
+                return JsonConvert.DeserializeObject<User>(responseBody);
             });
         }
 
@@ -843,15 +658,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/friendships/destroy.xml", postData);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    return User.Serializer.Deserialize(new StringReader(responseBody)) as User;
-                }
+                String responseBody = POSTv1_1("/friendships/destroy.json", postData);
+                return JsonConvert.DeserializeObject<User>(responseBody);
             });
         }
 
@@ -865,15 +673,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/blocks/create.xml", postData);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    return User.Serializer.Deserialize(new StringReader(responseBody)) as User;
-                }
+                String responseBody = POSTv1_1("/blocks/create.json", postData);
+                return JsonConvert.DeserializeObject<User>(responseBody);
             });
         }
 
@@ -887,15 +688,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/blocks/destroy.xml", postData);
-                if (NilClasses.CanDeserialize(responseBody))
-                {
-                    return null;
-                }
-                else
-                {
-                    return User.Serializer.Deserialize(new StringReader(responseBody)) as User;
-                }
+                String responseBody = POSTv1_1("/blocks/destroy.json", postData);
+                return JsonConvert.DeserializeObject<User>(responseBody);
             });
         }
         #region 内部タイマーイベント
@@ -1339,63 +1133,27 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         #endregion
 
-        internal class PreAuthenticatedWebClient : WebClient
-        {
-            private TwitterService _twitterService;
-            public PreAuthenticatedWebClient(TwitterService twitterService)
-            {
-                _twitterService = twitterService;
-            }
-            protected override WebRequest GetWebRequest(Uri address)
-            {
-                // このアプリケーションで HttpWebReqeust 以外がくることはない
-                HttpWebRequest webRequest = base.GetWebRequest(address) as HttpWebRequest;
-                webRequest.PreAuthenticate = true;
-                webRequest.Accept = "text/xml, application/xml";
-                webRequest.UserAgent = String.Format("{0}/{1}", _twitterService.ClientName, GetType().Assembly.GetName().Version);
-                //webRequest.Referer = TwitterService.Referer;
-                webRequest.Headers["X-Twitter-Client"] = _twitterService.ClientName;
-                webRequest.Headers["X-Twitter-Client-Version"] = _twitterService.ClientVersion;
-                webRequest.Headers["X-Twitter-Client-URL"] = _twitterService.ClientUrl;
-                if (_twitterService.EnableCompression)
-                    webRequest.Headers["Accept-Encoding"] = "gzip";
-
-                return webRequest;
-            }
-        }
-
-        /// <summary>
-        /// 指定されたURLからデータを取得し文字列として返します。CookieLoginModeが有効なときは自動的にCookieログイン状態で取得します。
-        /// </summary>
-        /// <param name="url">データを取得するURL</param>
-        /// <returns></returns>
-        public String GET(String url)
-        {
-            return GET(url, POSTFetchMode);
-        }
-
         /// <summary>
         /// 指定されたURLからデータを取得し文字列として返します。
         /// </summary>
         /// <param name="url">データを取得するURL</param>
-        /// <param name="postFetchMode">POSTで取得するかどうか</param>
         /// <returns></returns>
-        public String GET(String url, Boolean postFetchMode)
+        public String GETv1_1(String url)
         {
-            TraceLogger.Twitter.Information("GET: " + url);
-            return GETWithOAuth(url);
+            return GETv1_1(url, null);
         }
-
-        public String POST(String url, String postData)
+        /// <summary>
+        /// 指定されたURLからデータを取得し文字列として返します。
+        /// </summary>
+        /// <param name="url">データを取得するURL</param>
+        /// <param name="resourceEndpoint"></param>
+        /// <returns></returns>
+        public String GETv1_1(String url, String resourceEndpoint)
         {
-            TraceLogger.Twitter.Information("POST: " + url);
-            return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
-        }
+            TraceLogger.Twitter.Information("GET(v1.1): " + url);
+            return OAuthClient.Request(new Uri(ServiceServerPrefixV1_1 + url), TwitterOAuth.HttpMethod.GET, "", resourceEndpoint);
 
-        #region OAuth 認証アクセス
-        private String GETWithOAuth(String url)
-        {
-            HttpWebRequest webRequest = OAuthClient.CreateRequest(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.GET);
+            HttpWebRequest webRequest = OAuthClient.CreateRequest(new Uri(ServiceServerPrefixV1_1 + url), TwitterOAuth.HttpMethod.GET);
             if (EnableCompression)
                 webRequest.Headers["Accept-Encoding"] = "gzip";
 
@@ -1403,7 +1161,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             using (StreamReader sr = new StreamReader(GetResponseStream(webResponse)))
                 return sr.ReadToEnd();
         }
-        #endregion
+
+        public String POSTv1_1(String url, String postData)
+        {
+            return POSTv1_1(url, postData, null);
+        }
+        public String POSTv1_1(String url, String postData, String resourceEndpoint)
+        {
+            TraceLogger.Twitter.Information("POST(v1.1): " + url);
+            return OAuthClient.Request(new Uri(ServiceServerPrefixV1_1 + url), TwitterOAuth.HttpMethod.POST, postData, resourceEndpoint);
+        }
 
         private Stream GetResponseStream(WebResponse webResponse)
         {
@@ -1482,489 +1249,4 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
         }
     }
-
-    /// <summary>
-    /// データが空を表します。
-    /// </summary>
-    [XmlRoot("nilclasses")]
-    public class NilClasses
-    {
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static NilClasses()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(NilClasses));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-
-        public static Boolean CanDeserialize(String xml)
-        {
-            return NilClasses.Serializer.CanDeserialize(new XmlTextReader(new StringReader(xml)));
-        }
-    }
-
-    /// <summary>
-    /// DirectMessage のセットを格納します。
-    /// </summary>
-    [XmlRoot("direct-messages")]
-    public class DirectMessages
-    {
-        [XmlElement("direct_message")]
-        public DirectMessage[] DirectMessage;
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static DirectMessages()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(DirectMessages));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-    }
-
-    /// <summary>
-    /// ダイレクトメッセージの情報を表します。
-    /// </summary>
-    [XmlType("DirectMessage")]
-    public class DirectMessage
-    {
-        [XmlElement("id")]
-        public Int64 Id;
-        [XmlElement("text")]
-        public String _text;
-        [XmlElement("sender_id")]
-        public String SenderId;
-        [XmlElement("recipient_id")]
-        public String RecipientId;
-        [XmlElement("created_at")]
-        public String _createdAt;
-        [XmlElement("sender_screen_name")]
-        public String SenderScreenName;
-        [XmlElement("recipient_screen_name")]
-        public String RecipientScreenName;
-
-        [XmlIgnore]
-        public String Text
-        {
-            get
-            {
-                if (String.IsNullOrEmpty(_text))
-                    return String.Empty;
-
-                return Utility.UnescapeCharReference(_text);
-            }
-        }
-        [XmlIgnore]
-        public DateTime CreatedAt
-        {
-            get
-            {
-                return Utility.ParseDateTime(_createdAt);
-            }
-        }
-
-        public override string ToString()
-        {
-            return String.Format("DirectMessage: {0} (ID:{1})", Text, Id.ToString());
-        }
-    }
-
-    /// <summary>
-    /// Statusのセットを格納します。
-    /// </summary>
-    [XmlType("statuses")]
-    public class Statuses
-    {
-        [XmlElement("status")]
-        public Status[] Status;
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static Statuses()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(Statuses));
-                }
-            }
-        }
-
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Userのセットを格納します。
-    /// </summary>
-    [XmlType("users_list")]
-    public class UsersList
-    {
-        [XmlElement("users")]
-        public Users Users { get; set; }
-
-        [XmlElement("next_cursor")]
-        public Int64 NextCursor { get; set; }
-
-        [XmlElement("previous_cursor")]
-        public Int64 PreviousCursor { get; set; }
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static UsersList()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(UsersList));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Userのセットを格納します。
-    /// </summary>
-    [XmlType("users")]
-    public class Users
-    {
-        [XmlElement("user")]
-        public User[] User;
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static Users()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(Users));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-    }
-
-    [XmlType("user")]
-    public class User
-    {
-        [XmlElement("id")]
-        public Int32 Id;
-        [XmlElement("name")]
-        public String Name;
-        [XmlElement("screen_name")]
-        public String ScreenName;
-        [XmlElement("location")]
-        public String Location;
-        [XmlElement("description")]
-        public String Description;
-        [XmlElement("profile_image_url")]
-        public String ProfileImageUrl;
-        [XmlElement("url")]
-        public String Url;
-
-        [XmlIgnore]
-        public Boolean Protected { get { return ProtectedString.ToUpper() == "true" || ProtectedString == "1"; } set { ProtectedString = value.ToString(); } }
-        [XmlElement("protected")]
-        public String ProtectedString { get; set; }
-
-        [XmlElement("status")]
-        public Status Status;
-        //[XmlElement("following")]
-        [XmlIgnore]
-        public Boolean Following;
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static User()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(User));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-
-        public override string ToString()
-        {
-            return String.Format("User: {0} / {1} (ID:{2})", ScreenName, Name, Id.ToString());
-        }
-    }
-
-    /// <summary>
-    /// ステータスを表します。
-    /// </summary>
-    [XmlType("status")]
-    public class Status
-    {
-        [XmlElement("created_at")]
-        public String _createdAtOriginal;
-        [XmlElement("id")]
-        public Int64 Id;
-        [XmlElement("in_reply_to_status_id")]
-        public String InReplyToStatusId;
-        [XmlElement("in_reply_to_user_id")]
-        public String InReplyToUserId;
-        [XmlElement("retweeted_status")]
-        public Status RetweetedStatus;
-        [XmlElement("text")]
-        public String _textOriginal;
-        [XmlElement("user")]
-        public User User;
-        [XmlElement("source")]
-        public String Source;
-        [XmlElement("favorited")]
-        public String Favorited;
-
-
-        [XmlIgnore]
-        public Boolean Truncated { get { return TruncatedString.ToUpper() == "true" || TruncatedString == "1"; } set { TruncatedString = value.ToString(); } }
-        [XmlElement("truncated")]
-        public String TruncatedString { get; set; }
-
-        [XmlElement("retweet_count")]
-        public String RetweetCount;
-
-        [XmlIgnore]
-        public Boolean Retweeted { get { return RetweetedString.ToUpper() == "true" || RetweetedString == "1"; } set { RetweetedString = value.ToString(); } }
-        [XmlElement("retweeted")]
-        public String RetweetedString { get; set; }
-
-        [XmlElement("entities")]
-        public Entities Entities;
-
-        [XmlIgnore]
-        private String _text;
-        [XmlIgnore]
-        private DateTime _createdAt;
-
-        [XmlIgnore]
-        public String Text
-        {
-            get
-            {
-                if (!String.IsNullOrEmpty(_textOriginal) && _text == null)
-                {
-                    _text = Utility.UnescapeCharReference(_textOriginal);
-                }
-
-                return _text ?? "";
-            }
-            set
-            {
-                _text = value;
-            }
-        }
-        [XmlIgnore]
-        public DateTime CreatedAt
-        {
-            get
-            {
-                if (!String.IsNullOrEmpty(_createdAtOriginal) && _createdAt == DateTime.MinValue)
-                {
-                    _createdAt = Utility.ParseDateTime(_createdAtOriginal);
-                }
-                return _createdAt;
-            }
-            set
-            {
-                _createdAt = value;
-            }
-        }
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static Status()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(Status));
-                }
-            }
-        }
-
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-
-        public override int GetHashCode()
-        {
-            return (Int32)(this.Id - Int32.MaxValue);
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Status))
-                return false;
-
-            Status status = obj as Status;
-            return (status.Id == this.Id) && (status.Text == this.Text);
-        }
-
-        public override string ToString()
-        {
-            return String.Format("Status: {0} (ID:{1})", Text, Id.ToString());
-        }
-    }
-
-
-    /// <summary>
-    /// エンティティの情報を表します。
-    /// </summary>
-    [XmlType("entities")]
-    public class Entities
-    {
-        //[XmlElement("media")]
-        //public MediaEntity[] Media;
-        [XmlArray("urls")]
-        public UrlEntity[] Urls;
-        [XmlArray("hashtags")]
-        public HashtagEntity[] Hashtags;
-    }
-
-    /// <summary>
-    /// URLエンティティの情報を表します。
-    /// </summary>
-    [XmlType("url")]
-    public class UrlEntity
-    {
-        [XmlAttribute("start")]
-        public Int32 Start;
-        [XmlAttribute("end")]
-        public Int32 End;
-        [XmlElement("url")]
-        public String Url;
-        [XmlElement("display_url")]
-        public String DisplayUrl;
-        [XmlElement("expanded_url")]
-        public String ExpandedUrl;
-    }
-
-    /// <summary>
-    /// URLエンティティの情報を表します。
-    /// </summary>
-    [XmlType("hashtag")]
-    public class HashtagEntity
-    {
-        [XmlAttribute("start")]
-        public Int32 Start;
-        [XmlAttribute("end")]
-        public Int32 End;
-        [XmlElement("text")]
-        public String Text;
-    }
-
-
-    ///// <summary>
-    ///// メディアエンティティの情報を表します。
-    ///// </summary>
-    //[XmlType("creative")]
-    //public class MediaEntity
-    //{
-    //    [XmlElement("id")]
-    //    public Int64 Id;
-    //    [XmlElement("id_str")]
-    //    public String IdStr;
-    //    [XmlElement("media_url")]
-    //    public String MediaUrl;
-    //    [XmlElement("media_url_https")]
-    //    public String MediaUrlHttps;
-    //    [XmlElement("url")]
-    //    public String Url;
-    //    [XmlElement("display_url")]
-    //    public String DisplayUrl;
-    //    [XmlElement("expanded_url")]
-    //    public String ExpandedUrl;
-    //    [XmlElement("sizes")]
-    //    public MediaEntity.EntitySizes Sizes;
-    //    [XmlElement("type")]
-    //    public String Type;
-    //    [XmlAttribute("start")]
-    //    public Int32 Start;
-    //    [XmlAttribute("end")]
-    //    public Int32 End;
-
-    //    [XmlType("size")]
-    //    public class EntitySize
-    //    {
-    //        [XmlElement("resize")]
-    //        public String Resize;
-    //        [XmlElement("w")]
-    //        public Int32 W;
-    //        [XmlElement("h")]
-    //        public Int32 H;
-    //    }
-
-    //    [XmlType("size")]
-    //    public class EntitySizes
-    //    {
-    //        [XmlElement("large")]
-    //        public EntitySize Large;
-    //        [XmlElement("medium")]
-    //        public EntitySize Medium;
-    //        [XmlElement("small")]
-    //        public EntitySize Small;
-    //        [XmlElement("thumb")]
-    //        public EntitySize Thumb;
-    //    }
-    //}
 }

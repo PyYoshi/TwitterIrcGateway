@@ -181,6 +181,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>AddIns\DLRIntegration\Microsoft.Scripting.ExtensionAttribute.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.4.5.11\lib\net35\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -246,6 +249,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Session.cs" />
+    <Compile Include="TwitterModels.cs" />
     <Compile Include="TwitterService.cs" />
     <Compile Include="AddIns\TypableMap\TypableMap.cs" />
     <Compile Include="AddIns\TypableMap\TypableMapCommandProcessor.cs" />
@@ -255,6 +259,7 @@
   <ItemGroup>
     <None Include="AddIns\DLRIntegration\Samples\attach_event.py" />
     <None Include="AddIns\DLRIntegration\Samples\notify_delay.rb" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
