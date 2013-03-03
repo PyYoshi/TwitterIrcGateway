@@ -4,115 +4,40 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Xml;
-using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace Misuzilla.Applications.TwitterIrcGateway
 {
     /// <summary>
-    /// データが空を表します。
-    /// </summary>
-    [XmlRoot("nilclasses")]
-    public class NilClasses
-    {
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static NilClasses()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(NilClasses));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
-
-        public static Boolean CanDeserialize(String xml)
-        {
-            return NilClasses.Serializer.CanDeserialize(new XmlTextReader(new StringReader(xml)));
-        }
-    }
-
-    /// <summary>
     /// DirectMessage のセットを格納します。
     /// </summary>
-    [XmlRoot("direct-messages")]
     public class DirectMessages
     {
-        [XmlElement("direct_message")]
+        [JsonProperty("direct_message")]
         public DirectMessage[] DirectMessage;
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static DirectMessages()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(DirectMessages));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
     }
 
     /// <summary>
     /// ダイレクトメッセージの情報を表します。
     /// </summary>
-    [XmlType("DirectMessage")]
     public class DirectMessage
     {
-        [XmlElement("id")]
+        [JsonProperty("id")]
         public Int64 Id;
-        [XmlElement("text")]
-        public String _text;
-        [XmlElement("sender_id")]
+        [JsonProperty("text")]
+        public String Text;
+        [JsonProperty("sender_id")]
         public String SenderId;
-        [XmlElement("recipient_id")]
+        [JsonProperty("recipient_id")]
         public String RecipientId;
-        [XmlElement("created_at")]
-        public String _createdAt;
-        [XmlElement("sender_screen_name")]
+        [JsonProperty("created_at")]
+        [JsonConverter(typeof(TwitterDateTimeConverter))]
+        public DateTime CreatedAt;
+        [JsonProperty("sender_screen_name")]
         public String SenderScreenName;
-        [XmlElement("recipient_screen_name")]
+        [JsonProperty("recipient_screen_name")]
         public String RecipientScreenName;
-
-        [XmlIgnore]
-        public String Text
-        {
-            get
-            {
-                if (String.IsNullOrEmpty(_text))
-                    return String.Empty;
-
-                return Utility.UnescapeCharReference(_text);
-            }
-        }
-        [XmlIgnore]
-        public DateTime CreatedAt
-        {
-            get
-            {
-                return Utility.ParseDateTime(_createdAt);
-            }
-        }
 
         public override string ToString()
         {
@@ -123,32 +48,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// <summary>
     /// Statusのセットを格納します。
     /// </summary>
-    [XmlType("statuses")]
     public class Statuses
     {
-        [XmlElement("status")]
         public Status[] Status;
-
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static Statuses()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(Statuses));
-                }
-            }
-        }
-
-        public static XmlSerializer Serializer
-        {
-            get
-            {
-                return _serializer;
-            }
-        }
     }
 
     /// <summary>
