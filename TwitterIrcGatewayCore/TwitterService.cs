@@ -1141,7 +1141,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public String POST(String url, String postData)
         {
-            TraceLogger.Twitter.Information("POST: " + url);
+            TraceLogger.Twitter.Information("POST: " + url + " " + postData);
             return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
         }
 
