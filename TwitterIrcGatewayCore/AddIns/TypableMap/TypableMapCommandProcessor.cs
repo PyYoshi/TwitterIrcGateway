@@ -6,7 +6,7 @@ using TypableMap;
 
 namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
 {
-    public delegate Boolean ProcessCommand(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, String args);
+    public delegate Boolean ProcessCommand(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, String args);
 
     public class TypableMapCommandProcessor
     {
@@ -107,10 +107,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
             {
                 try
                 {
-                    Status status;
-                    if (TypableMap.TryGetValue(m.Groups["tid"].Value, out status))
+                    Tweet tweet;
+                    if (TypableMap.TryGetValue(m.Groups["tid"].Value, out tweet))
                     {
-                        _commands[m.Groups["cmd"].Value].Process(this, message, status, m.Groups["args"].Value);
+                        _commands[m.Groups["cmd"].Value].Process(this, message, tweet, m.Groups["args"].Value);
                     }
                     else
                     {
@@ -147,7 +147,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
         public interface ITypableMapCommand
         {
             String CommandName { get; }
-            Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, String args);
+            Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, String args);
         }
         
         public class GenericCommand : ITypableMapCommand
@@ -174,9 +174,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                 get { return _commandName; }
             }
 
-            public bool Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, string args)
+            public bool Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, string args)
             {
-                return _processCommandDelegate(processor, msg, status, args);
+                return _processCommandDelegate(processor, msg, tweet, args);
             }
             #endregion
         }
@@ -190,15 +190,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                 get { return "u"; }
             }
 
-            public bool Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, string args)
+            public bool Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, string args)
             {
                 processor.Session.SendServer(new NoticeMessage
                 {
                     Receiver = msg.Receiver,
-                    Content = String.Format(
-                        "http://twitter.com/{0}/statuses/{1}",
-                        status.User.ScreenName,
-                        status.Id)
+                    Content = String.Format("http://twitter.com/{0}/statuses/{1}",tweet.User.ScreenName,tweet.Id)
                 });
                 return true;
             }
@@ -214,14 +211,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                 get { return "h"; }
             }
 
-            public bool Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, string args)
+            public bool Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, string args)
             {
                 processor.Session.SendServer(new NoticeMessage
                 {
                     Receiver = msg.Receiver,
                     Content = String.Format(
                         "http://twitter.com/{0}",
-                        status.User.ScreenName)
+                        tweet.User.ScreenName)
                 });
                 return true;
             }
@@ -232,20 +229,20 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
         public class FavCommand : ITypableMapCommand
         {
             public virtual String CommandName { get { return "fav"; } }
-            public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, String args)
+            public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, String args)
             {
                 Boolean isUnfav = (String.Compare(CommandName, "unfav", true) == 0);
                 processor.Session.RunCheck(() =>
                                                {
-                                                   Status favStatus = (isUnfav
+                                                   Tweet favTweet = (isUnfav
                                                                            ? processor.Session.TwitterService.DestroyFavorite(
-                                                                                 status.Id)
+                                                                                 tweet.Id)
                                                                            : processor.Session.TwitterService.CreateFavorite(
-                                                                                 status.Id));
+                                                                                 tweet.Id));
                                                    processor.Session.SendChannelMessage(msg.Receiver, processor.Session.CurrentNick, String.Format(
                                                                                             "ユーザ {0} のステータス \"{1}\"をFavorites{2}しました。",
-                                                                                            favStatus.User.ScreenName,
-                                                                                            favStatus.Text,
+                                                                                            favTweet.User.ScreenName,
+                                                                                            favTweet.Text,
                                                                                             (isUnfav ? "から削除" : "に追加")), true, false, false, true);
                                                });
                 return true;
@@ -272,7 +269,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                 get { return "re"; }
             }
 
-            public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, string args)
+            public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, string args)
             {
                 var session = processor.Session;
                 if (args.Trim() == String.Empty)
@@ -281,14 +278,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                     return true;
                 }
 
-                String replyMsg = String.Format("@{0} {1}", status.User.ScreenName, args);
+                String replyMsg = String.Format("@{0} {1}", tweet.User.ScreenName, args);
                 
                 // 入力が発言されたチャンネルには必ずエコーバックする。
                 // 先に出しておかないとundoがよくわからなくなる。
                 session.SendChannelMessage(msg.Receiver, session.CurrentNick, replyMsg, true, false, false, false);
-                session.UpdateStatusWithReceiverDeferred(msg.Receiver, replyMsg, status.Id, (updatedStatus) =>
-                                                                                                {
-                                                                                                });
+                session.UpdateStatusWithReceiverDeferred(msg.Receiver, replyMsg, tweet.Id, (updatedStatus) =>{});
                 return true;
             }
 
@@ -304,17 +299,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                 get { return "rt"; }
             }
 
-            public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Status status, string args)
+            public Boolean Process(TypableMapCommandProcessor processor, PrivMsgMessage msg, Tweet tweet, string args)
             {
                 var session = processor.Session;
                 if (args.Trim() == String.Empty)
                 {
                     // ここに公式RT機能を実装
-                    Status retweetStatus = processor.Session.TwitterService.RetweetStatus(status.Id);
+                    Tweet retweetTweet = processor.Session.TwitterService.RetweetStatus(tweet.Id);
                     session.SendChannelMessage(msg.Receiver, session.CurrentNick, String.Format(
                         "ユーザ {0} のステータス \"{1}\"をRetweetしました。",
-                        retweetStatus.RetweetedStatus.User.ScreenName,
-                        retweetStatus.Text), true, false, false, true
+                        retweetTweet.User.ScreenName,
+                        retweetTweet.Text), true, false, false, true
                     );
                     
                     return true;

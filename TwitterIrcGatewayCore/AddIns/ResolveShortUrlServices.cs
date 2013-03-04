@@ -21,9 +21,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
         void Session_PreFilterProcessTimelineStatus(object sender, TimelineStatusEventArgs e)
         {
             // t.co (Twitter Url Shortener)
-            if (e.Status.Entities != null && e.Status.Entities.Urls != null && e.Status.Entities.Urls.Length > 0)
+            if (e.Tweet.Entities != null && e.Tweet.Entities.Urls != null && e.Tweet.Entities.Urls.Count > 0)
             {
-                foreach (var urlEntity in e.Status.Entities.Urls)
+                foreach (var urlEntity in e.Tweet.Entities.Urls)
                 {
                     if (!String.IsNullOrEmpty(urlEntity.ExpandedUrl))
                     {

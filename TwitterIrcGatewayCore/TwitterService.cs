@@ -269,12 +269,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <return cref="User">ユーザー情報</returns>
         /// <exception cref="WebException"></exception>
         /// <exception cref="TwitterServiceException"></exception>
-        public Users VerifyCredential()
+        public User VerifyCredential()
         {
-            return ExecuteRequest<Users>(() =>
+            return ExecuteRequest<User>(() =>
             {
-                // TODO: デシリアライズ処理をここへ
-                return new Users();
+                String responseBody = GET("/account/verify_credentials.json", false);
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
             });
         }
 
@@ -283,7 +284,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public Tweets UpdateStatus(String message)
+        public Tweet UpdateStatus(String message)
         {
             return UpdateStatus(message, 0);
         }
@@ -293,120 +294,159 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="message"></param>
         /// <param name="inReplyToStatusId"></param>
-        public Tweets UpdateStatus(String message, Int64 inReplyToStatusId)
+        public Tweet UpdateStatus(String message, Int64 inReplyToStatusId)
         {
             String encodedMessage = TwitterService.EncodeMessage(message);
-            return ExecuteRequest<Tweets>(() =>
+            return ExecuteRequest<Tweet>(() =>
             {
                 String postData = String.Format("status={0}{1}", encodedMessage, (inReplyToStatusId != 0 ? "&in_reply_to_status_id=" + inReplyToStatusId : ""));
                 String responseBody = POST("/statuses/update.json", postData);
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets();
+                Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
+                return tweet;
             });
         }
 
         /// <summary>
         /// 指定されたユーザにダイレクトメッセージを送信します。
+        /// 
         /// </summary>
-        /// <param name="screenName"></param>
-        /// <param name="message"></param>
-        public void SendDirectMessage(String screenName, String message)
+        public DirectMessage SendDirectMessage(String screenName, String message)
         {
             String encodedMessage = TwitterService.EncodeMessage(message);
-            ExecuteRequest(() =>
+            return ExecuteRequest<DirectMessage>(() =>
             {
                 String postData = String.Format("user={0}&text={1}", GetUserId(screenName), encodedMessage);
                 String responseBody = POST("/direct_messages/new.json", postData);
+                DirectMessage directMessage = JsonConvert.DeserializeObject<DirectMessage>(responseBody);
+                return directMessage;
             });
         }
 
         /// <summary>
-        /// friendsを取得します。
+        /// 
         /// </summary>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Users[] GetFriends()
+        public UserIds GetFriendIds()
         {
-            return GetFriends(1);
+            return GetFriendIds(-1);
         }
 
         /// <summary>
-        /// friendsを取得します。
+        /// 
         /// </summary>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Users[] GetFriends(Int32 maxPage)
+        public UserIds GetFriendIds(long cursor)
         {
-            // FIXME: http://pplace.jp/2012/10/1058/
-            List<Users> users = new List<Users>();
-            Int64 cursor = -1;
-            Int32 page = maxPage;
-            return ExecuteRequest<Users[]>(() =>
+            UserIds userIds = new UserIds();
+            return ExecuteRequest<UserIds>(() =>
             {
-                while (cursor != 0 && page > 0)
-                {
-                    String responseBody = GET(String.Format("/statuses/friends.xml?cursor={0}&lite=true", cursor));
-                    // TODO: デシリアライズ処理をここへ
-                    return new Users[]();
-                }
-
-                return users.ToArray();
+                String responseBody = GET(String.Format("/friends/ids.json?cursor={0}", cursor));
+                userIds = JsonConvert.DeserializeObject<UserIds>(responseBody);
+                return userIds;
             });
+            
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public UserIds GetFollowerIds()
+        {
+            return GetFollowerIds(-1);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public UserIds GetFollowerIds(long cursor)
+        {
+            UserIds userIds = new UserIds();
+            return ExecuteRequest<UserIds>(() =>
+            {
+                String responseBody = GET(String.Format("/followers/ids.json?cursor={0}", cursor));
+                userIds = JsonConvert.DeserializeObject<UserIds>(responseBody);
+                return userIds;
+            });
+        }
+
+        /// <summary>
+        /// usersを取得します。
+        /// </summary>
+        public List<User> GetUsers(List<long> userIds)
+        {
+            List<User> users = new List<User>();
+            return ExecuteRequest<List<User>>(() =>
+            {
+                String userIdsStr = JsonConvert.SerializeObject(userIds);
+                String postData = String.Format("user_id={0}", userIdsStr);
+                String responseBody = POST("/users/lookup.json", postData);
+                users = JsonConvert.DeserializeObject<List<User>>(responseBody);
+                return users;
+            });
+        }
+
+        /// <summary>
+        /// friendsを取得します。
+        /// </summary>
+        public List<User> GetFriends()
+        {
+            List<User> users = new List<User>();
+            UserIds userIds = GetFriendIds();
+            return GetUsers(userIds.Ids);
+        }
+
+        /// <summary>
+        /// followersを取得します。
+        /// </summary>
+        public List<User> GetFollowers()
+        {
+            List<User> users = new List<User>();
+            UserIds userIds = GetFollowerIds();
+            return GetUsers(userIds.Ids);
         }
 
         /// <summary>
         /// userを取得します。
         /// </summary>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Users GetUser(String screenName)
+        public User GetUser(String screenName)
         {
-            return ExecuteRequest<Users>(() =>
+            return ExecuteRequest<User>(() =>
             {
                 String responseBody = GET(String.Format("/users/show.json?screen_name={0}&include_entities=true", screenName), false);
-                // TODO: デシリアライズ処理をここへ
-                return new Users();
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
             });
         }
+
         /// <summary>
         /// 指定したIDでユーザ情報を取得します。
         /// </summary>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Users GetUserById(Int32 id)
+        public User GetUserById(Int64 id)
         {
-            return ExecuteRequest<Users>(() =>
+            return ExecuteRequest<User>(() =>
             {
                 String responseBody = GET(String.Format("/users/show.json?id={0}&include_entities=true", id), false);
-                // TODO: デシリアライズ処理をここへ
-                return new Users();
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
             });
         }
 
         /// <summary>
         /// timeline を取得します。
         /// </summary>
-        /// <param name="sinceId">最後に取得したID</param>
-        /// <returns>ステータス</returns>
-        public Tweets[] GetTimeline(Int64 sinceId)
+        public List<Tweet> GetTimeline(Int64 sinceId)
         {
-            // TODO: この関数で呼ばれているかのチェック
             return GetTimeline(sinceId, FetchCount);
         }
 
         /// <summary>
         /// timeline を取得します。
         /// </summary>
-        /// <param name="sinceId">最後に取得したID</param>
-        /// <param name="count">取得数</param>
-        /// <returns>ステータス</returns>
-        public Tweets[] GetTimeline(Int64 sinceId, Int32 count)
+        public List<Tweet> GetTimeline(Int64 sinceId, Int32 count)
         {
-            return ExecuteRequest<Tweets[]>(() =>
+            return ExecuteRequest<List<Tweet>>(() =>
             {
                 String responseBody = GET(String.Format("/statuses/home_timeline.json?since_id={0}&count={1}&include_entities=true", sinceId, count));
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets[]();
+                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                return tweets;
             });
         }
 
@@ -415,23 +455,21 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <exception cref="WebException"></exception>
         /// <exception cref="TwitterServiceException"></exception>
-        public Tweets GetStatusById(Int64 id)
+        public Tweet GetStatusById(Int64 id)
         {
-            return ExecuteRequest<Tweets>(() =>
+            return ExecuteRequest<Tweet>(() =>
             {
                 String responseBody = GET(String.Format("/statuses/show.json?id={0}&include_entities=true", id), false);
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets();
+                Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
+                return tweet;
             });
         }
 
         /// <summary>
         /// replies を取得します。
         /// </summary>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
         [Obsolete]
-        public Tweets[] GetReplies()
+        public List<Tweet> GetReplies()
         {
             return GetMentions();
         }
@@ -439,9 +477,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// mentions を取得します。
         /// </summary>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Tweets[] GetMentions()
+        public List<Tweet> GetMentions()
         {
             return GetMentions(1);
         }
@@ -449,15 +485,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// mentions を取得します。
         /// </summary>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Tweets[] GetMentions(Int64 sinceId)
+        public List<Tweet> GetMentions(Int64 sinceId)
         {
-            return ExecuteRequest<Tweets[]>(() =>
+            return ExecuteRequest<List<Tweet>>(() =>
             {
                 String responseBody = GET(String.Format("/statuses/mentions_timeline.json?since_id={0}&include_entities=true", sinceId));
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets[]();
+                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                return tweets;
             });
         }
 
@@ -466,7 +500,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <exception cref="WebException"></exception>
         /// <exception cref="TwitterServiceException"></exception>
-        public DirectMessages[] GetDirectMessages()
+        public List<DirectMessage> GetDirectMessages()
         {
             return GetDirectMessages(0);
         }
@@ -474,85 +508,52 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// direct messages を取得します。
         /// </summary>
-        /// <param name="sinceId">最後に取得したID</param>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public DirectMessage[] GetDirectMessages(Int64 sinceId)
+        public List<DirectMessage> GetDirectMessages(Int64 sinceId)
         {
-            // TODO: この関数が使われているかのチェック
-            return ExecuteRequest<DirectMessage[]>(() =>
+            return ExecuteRequest<List<DirectMessage>>(() =>
             {
-                // Cookie ではダメ
                 String responseBody = GET(String.Format("/direct_messages.json{0}", (sinceId != 0 ? "?since_id=" + sinceId : "")), false);
-                // TODO: デシリアライズ処理をここへ
-                return new DirectMessage[]();
+                List<DirectMessage> directMessages = JsonConvert.DeserializeObject<List<DirectMessage>>(responseBody);
+                return directMessages;
             });
         }
 
-        /// <param name="screenName">スクリーンネーム</param>
-        /// <param name="since">最終更新日時</param>
-        /// <param name="count"></param>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Tweets[] GetTimelineByScreenName(String screenName, DateTime since, Int32 count)
+        /// <summary>
+        /// user timeline を取得します。
+        /// </summary>
+        public List<Tweet> GetTimelineByScreenName(String screenName,Int64 sinceId, Int32 count)
         {
-            /*
-             * FIXME: since_idでの対応
-             * または最新のツイートのみ取得するためにsince_idを使わない仕様に変更
-             * https://dev.twitter.com/docs/api/1.1/get/statuses/user_timeline
-             */
-            return ExecuteRequest<Tweets[]>(() =>
+            return ExecuteRequest<List<Tweet>>(() =>
             {
-                StringBuilder sb = new StringBuilder();
-                if (since != new DateTime())
-                    sb.Append("since=").Append(Utility.UrlEncode(since.ToUniversalTime().ToString("r"))).Append("&");
-                if (count > 0)
-                    sb.Append("count=").Append(count).Append("&");
-
-                String responseBody = GET(String.Format("/statuses/user_timeline.json?screen_name={0}&{1}", screenName, sb.ToString()));
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets[]();
+                String responseBody = GET(String.Format("/statuses/user_timeline.json?screen_name={0}{1}{2}", screenName, (sinceId != 0) ? "&since_id=" + sinceId : "", (count > 0 ? "&count="+ count : "")));
+                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                return tweets;
             });
         }
 
         /// <summary>
         /// 指定したユーザの favorites を取得します。
         /// </summary>
-        /// <param name="screenName">スクリーンネーム</param>
-        /// <param name="page">ページ</param>
-        /// <exception cref="WebException"></exception>
-        /// <exception cref="TwitterServiceException"></exception>
-        public Tweets[] GetFavoritesByScreenName(String screenName, Int32 page)
+        public List<Tweet> GetFavoritesByScreenName(String screenName, Int64 sinceId)
         {
-            /*
-             * FIXME:
-             * pageからsince_idへ変更
-             * https://dev.twitter.com/docs/api/1.1/get/favorites/list
-             */
-            return ExecuteRequest<Tweets[]>(() =>
+            return ExecuteRequest<List<Tweet>>(() =>
             {
-                StringBuilder sb = new StringBuilder();
-                if (page > 0)
-                    sb.Append("page=").Append(page).Append("&");
-
-                String responseBody = GET(String.Format("/favorites/list.json?screen_name={0}&{1}", screenName, sb.ToString()));
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets[]();
+                String responseBody = GET(String.Format("/favorites/list.json?screen_name={0}{1}", screenName, (sinceId != 0 ? "&since_id=" + sinceId :"")));
+                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                return tweets;
             });
         }
 
         /// <summary>
         /// メッセージをfavoritesに追加します。
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public Tweets CreateFavorite(Int64 id)
+        public Tweet CreateFavorite(Int64 id)
         {
-            return ExecuteRequest<Tweets>(() =>
+            return ExecuteRequest<Tweet>(() =>
             {
                 String responseBody = POST(String.Format("/favorites/create.json?id={0}", id), "");
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets();
+                Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
+                return tweet;
             });
         }
 
@@ -561,43 +562,39 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public Tweets DestroyFavorite(Int64 id)
+        public Tweet DestroyFavorite(Int64 id)
         {
-            return ExecuteRequest<Status>(() =>
+            return ExecuteRequest<Tweet>(() =>
             {
                 String responseBody = POST(String.Format("/favorites/destroy.json?id={0}", id), "");
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets();
+                Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
+                return tweet;
             });
         }
 
         /// <summary>
         /// メッセージを削除します。
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public Tweets DestroyStatus(Int64 id)
+        public Tweet DestroyStatus(Int64 id)
         {
-            return ExecuteRequest<Status>(() =>
+            return ExecuteRequest<Tweet>(() =>
             {
                 String responseBody = POST(String.Format("/statuses/destroy/{0}.json", id), "");
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets();
+                Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
+                return tweet;
             });
         }
 
         /// <summary>
         /// メッセージをretweetします。
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public Tweets RetweetStatus(Int64 id)
+        public Tweet RetweetStatus(Int64 id)
         {
-            return ExecuteRequest<Tweets>(() =>
+            return ExecuteRequest<Tweet>(() =>
             {
                 String responseBody = POST(String.Format("/statuses/retweet/{0}.json", id), "");
-                // TODO: デシリアライズ処理をここへ
-                return new Tweets();
+                Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
+                return tweet;
             });
         }
 
@@ -606,14 +603,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="screenName"></param>
         /// <returns></returns>
-        public Users CreateFriendship(String screenName)
+        public User CreateFriendship(String screenName)
         {
-            return ExecuteRequest<Users>(() =>
+            return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
                 String responseBody = POST("/friendships/create.json", postData);
-                // TODO: デシリアライズ処理をここへ
-                return new Users();
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
             });
         }
 
@@ -622,48 +619,59 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="screenName"></param>
         /// <returns></returns>
-        public Users DestroyFriendship(String screenName)
+        public User DestroyFriendship(String screenName)
         {
-            return ExecuteRequest<Users>(() =>
+            return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
                 String responseBody = POST("/friendships/destroy.json", postData);
-                // TODO: デシリアライズ処理をここへ
-                return new Users();
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
             });
         }
 
         /// <summary>
         /// ユーザをblockします。
         /// </summary>
-        /// <param name="screenName"></param>
-        /// <returns></returns>
-        public Users CreateBlock(String screenName)
+        public User CreateBlock(String screenName)
         {
-            return ExecuteRequest<Users>(() =>
+            return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
                 String responseBody = POST("/blocks/create.json", postData);
-                // TODO: デシリアライズ処理をここへ
-                return new Users();
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
             });
         }
 
         /// <summary>
         /// ユーザへのblockを解除します。
         /// </summary>
-        /// <param name="screenName"></param>
-        /// <returns></returns>
-        public Users DestroyBlock(String screenName)
+        public User DestroyBlock(String screenName)
         {
-            return ExecuteRequest<Users>(() =>
+            return ExecuteRequest<User>(() =>
             {
                 String postData = String.Format("screen_name={0}", screenName);
                 String responseBody = POST("/blocks/destroy.json", postData);
-                // TODO: デシリアライズ処理をここへ
-                return new Users();
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
             });
         }
+
+        /// <summary>
+        /// ユーザをspam報告します。
+        /// </summary>
+        public User ReportSpam(String screenName)
+        {
+            return ExecuteRequest<User>(() =>
+            {
+                String postData = String.Format("screen_name={0}", screenName);
+                String responseBody = POST("/users/report_spam.json", postData);
+                User user = JsonConvert.DeserializeObject<User>(responseBody);
+                return user;
+            });
+        }
+
         #region 内部タイマーイベント
         /// <summary>
         /// Twitter のタイムラインの受信を開始します。
@@ -744,23 +752,23 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// 最終更新IDを更新します。
         /// </summary>
         /// <param name="sinceId"></param>
-        private void UpdateLastAccessStatusId(Status status, ref Int64 sinceId)
+        private void UpdateLastAccessTweetId(Tweet tweet, ref Int64 sinceId)
         {
-            if (ProcessDropProtection(_statusBuffer, status.Id))
+            if (ProcessDropProtection(_statusBuffer, tweet.Id))
             {
                 if (EnableDropProtection)
                 {
                     // 取りこぼし防止しているときは一番古いID
-                    if (status.Id < sinceId)
+                    if (tweet.Id < sinceId)
                     {
-                        sinceId = status.Id;
+                        sinceId = tweet.Id;
                     }
                 }
                 else
                 {
-                    if (status.Id > sinceId)
+                    if (tweet.Id > sinceId)
                     {
-                        sinceId = status.Id;
+                        sinceId = tweet.Id;
                     }
                 }
             }
@@ -769,63 +777,65 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// ステータスがすでに流されたかどうかをチェックして、流されていない場合に指定されたアクションを実行します。
         /// </summary>
-        /// <param name="status"></param>
-        /// <param name="action"></param>
-        public void ProcessStatus(Status status, Action<Status> action)
+        public void ProcessTweet(Tweet tweet, Action<Tweet> action)
         {
-            if (ProcessDropProtection(_statusBuffer, status.Id))
+            if (ProcessDropProtection(_statusBuffer, tweet.Id))
             {
-                action(status);
-                UpdateLastAccessStatusId(status, ref _lastAccessTimelineId);
+                action(tweet);
+                UpdateLastAccessTweetId(tweet, ref _lastAccessTimelineId);
             }
          }
 
         /// <summary>
         /// ステータスがすでに流されたかどうかをチェックして、流されていない場合に指定されたアクションを実行します。
         /// </summary>
-        /// <param name="statuses"></param>
-        /// <param name="action"></param>
-        public void ProcessStatuses(Statuses statuses, Action<Statuses> action)
+        public void ProcessTweets(List<Tweet> tweets, Action<List<Tweet>> action)
         {
-            Statuses tmpStatuses = new Statuses();
-            List<Status> statusList = new List<Status>();
-            foreach (Status status in statuses.Status)
+            List<Tweet> tmpTweets = new List<Tweet>();
+            List<Tweet> tweetList = new List<Tweet>();
+            foreach (Tweet tweet in tweets)
             {
-                ProcessStatus(status, s =>
+                ProcessTweet(tweet, s =>
                 {
-                    statusList.Add(status);
-                    UpdateLastAccessStatusId(status, ref _lastAccessTimelineId);
+                    tweetList.Add(tweet);
+                    UpdateLastAccessTweetId(tweet, ref _lastAccessTimelineId);
                 });
             }
 
-            if (statusList.Count == 0)
+            if (tweetList.Count == 0)
                 return;
-            tmpStatuses.Status = statusList.ToArray();
-            action(tmpStatuses);
+            tmpTweets = tweetList;
+            action(tmpTweets);
         }
         /// <summary>
         /// Repliesステータスがすでに流されたかどうかをチェックして、流されていない場合に指定されたアクションを実行します。
         /// </summary>
-        /// <param name="statuses"></param>
-        /// <param name="action"></param>
-        public void ProcessRepliesStatus(Statuses statuses, Action<Statuses> action)
+        public void ProcessRepliesTweet(List<Tweet> tweets, Action<List<Tweet>> action)
         {
-            Statuses tmpStatuses = new Statuses();
-            List<Status> statusList = new List<Status>();
-            foreach (Status status in statuses.Status.Where(s => s.Id > _lastAccessRepliesId))
+            List<Tweet> tmpTweets = new List<Tweet>();
+            List<Tweet> tweetList = new List<Tweet>();
+            foreach (Tweet tweet in tweets)
             {
-                if (ProcessDropProtection(_repliesBuffer, status.Id) && ProcessDropProtection(_statusBuffer, status.Id))
+                ProcessTweet(tweet, s =>
                 {
-                    statusList.Add(status);
+                    tweetList.Add(tweet);
+                    UpdateLastAccessTweetId(tweet, ref _lastAccessTimelineId);
+                });
+            }
+            foreach (Tweet tweet in tweets.Where(s => s.Id > _lastAccessRepliesId))
+            {
+                if (ProcessDropProtection(_repliesBuffer, tweet.Id) && ProcessDropProtection(_statusBuffer, tweet.Id))
+                {
+                    tweetList.Add(tweet);
                 }
-                UpdateLastAccessStatusId(status, ref _lastAccessTimelineId);
-                UpdateLastAccessStatusId(status, ref _lastAccessRepliesId);
+                UpdateLastAccessTweetId(tweet, ref _lastAccessTimelineId);
+                UpdateLastAccessTweetId(tweet, ref _lastAccessRepliesId);
             }
 
-            if (statusList.Count == 0)
+            if (tweetList.Count == 0)
                 return;
-            tmpStatuses.Status = statusList.ToArray();
-            action(tmpStatuses);
+            tmpTweets = tweetList;
+            action(tmpTweets);
         }
 
         private void CheckNewTimeLine()
@@ -833,18 +843,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             Boolean friendsCheckRequired = false;
             RunCheck(delegate
             {
-                Statuses statuses = GetTimeline(_lastAccessTimelineId);
-                Array.Reverse(statuses.Status);
+                List<Tweet> tweets = GetTimeline(_lastAccessTimelineId);
+                //Array.Reverse(tweets.Status);
+                tweets.Reverse();
                 // 差分チェック
-                ProcessStatuses(statuses, (s) =>
+                ProcessTweets(tweets, (s) =>
                 {
                     OnTimelineStatusesReceived(new StatusesUpdatedEventArgs(s, _isFirstTime, friendsCheckRequired));
                 });
 
                 if (_isFirstTime || !EnableDropProtection)
                 {
-                    if (statuses.Status != null && statuses.Status.Length > 0)
-                        _lastAccessTimelineId = statuses.Status.Select(s => s.Id).Max();
+                    if (tweets != null && tweets.Count > 0)
+                        _lastAccessTimelineId = tweets.Select(s => s.Id).Max();
                 }
                 _isFirstTime = false;
             });
@@ -854,12 +865,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             RunCheck(delegate
             {
-                DirectMessages directMessages = (_lastAccessDirectMessageId == 0) ? GetDirectMessages() : GetDirectMessages(_lastAccessDirectMessageId);
-                Array.Reverse(directMessages.DirectMessage);
-                foreach (DirectMessage message in directMessages.DirectMessage)
+                List<DirectMessage> directMessages = (_lastAccessDirectMessageId == 0) ? GetDirectMessages() : GetDirectMessages(_lastAccessDirectMessageId);
+                directMessages.Reverse();
+                foreach (DirectMessage message in directMessages)
                 {
                     // チェック
-                    if (message == null || String.IsNullOrEmpty(message.SenderScreenName))
+                    if (message == null || String.IsNullOrEmpty(message.Sender.ScreenName))
                     {
                         continue;
                     }
@@ -882,11 +893,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             Boolean friendsCheckRequired = false;
             RunCheck(delegate
             {
-                Statuses statuses = GetMentions(_lastAccessRepliesId);
-                Array.Reverse(statuses.Status);
+                List<Tweet> tweets = GetMentions(_lastAccessRepliesId);
+                tweets.Reverse();
 
                 // 差分チェック
-                ProcessRepliesStatus(statuses, (s) =>
+                ProcessRepliesTweet(tweets, (s) =>
                 {
                     // Here I pass dummy, because no matter how the replier flags
                     // friendsCheckRequired, we cannot receive his or her info
@@ -896,8 +907,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
                 if (_isFirstTimeReplies || !EnableDropProtection)
                 {
-                    if (statuses.Status != null && statuses.Status.Length > 0)
-                        _lastAccessRepliesId = statuses.Status.Select(s => s.Id).Max();
+                    if (tweets != null && tweets.Count > 0)
+                        _lastAccessRepliesId = tweets.Select(s => s.Id).Max();
                 }
                 _isFirstTimeReplies = false;
             });
@@ -1380,15 +1391,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class StatusesUpdatedEventArgs : EventArgs
     {
-        public Statuses Statuses { get; set; }
+        public List<Tweet> Tweets { get; set; }
         public Boolean IsFirstTime { get; set; }
         public Boolean FriendsCheckRequired { get; set; }
-        public StatusesUpdatedEventArgs(Statuses statuses)
+        public StatusesUpdatedEventArgs(List<Tweet> tweets)
         {
-            this.Statuses = statuses;
+            this.Tweets = tweets;
         }
-        public StatusesUpdatedEventArgs(Statuses statuses, Boolean isFirstTime, Boolean friendsCheckRequired)
-            : this(statuses)
+        public StatusesUpdatedEventArgs(List<Tweet> tweets, Boolean isFirstTime, Boolean friendsCheckRequired)
+            : this(tweets)
         {
             this.IsFirstTime = isFirstTime;
             this.FriendsCheckRequired = friendsCheckRequired;
@@ -1430,257 +1441,289 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
     }
 
-    /*
     /// <summary>
-    /// データが空を表します。
+    /// 
     /// </summary>
-    [XmlRoot("nilclasses")]
-    public class NilClasses
+    public class User
     {
-        private static Object _syncObject = new object();
-        private static XmlSerializer _serializer = null;
-        static NilClasses()
-        {
-            lock (_syncObject)
-            {
-                if (_serializer == null)
-                {
-                    _serializer = new XmlSerializer(typeof(NilClasses));
-                }
-            }
-        }
-        public static XmlSerializer Serializer
+        // https://dev.twitter.com/docs/platform-objects/users
+        [JsonProperty("contributors_enabled", NullValueHandling = NullValueHandling.Ignore)]
+        public bool ContributorsEnabled { get; set; }
+        [JsonProperty("created_at", NullValueHandling = NullValueHandling.Ignore)]
+        public string _createdAt { get; set; }
+        [JsonIgnore]
+        public DateTime CreatedAt
         {
             get
             {
-                return _serializer;
+                return Utility.ParseDateTime(_createdAt);
             }
         }
-
-        public static Boolean CanDeserialize(String xml)
-        {
-            return NilClasses.Serializer.CanDeserialize(new XmlTextReader(new StringReader(xml)));
-        }
-    }
-     */
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public class Users
-    {
-        // https://dev.twitter.com/docs/platform-objects/users
-        [JsonProperty("contributors_enabled")]
-        public bool hoge { get; set; }
-        [JsonProperty("created_at")]
-        public string hoge { get; set; }
-        [JsonProperty("default_profile")]
-        public bool hoge { get; set; }
-        [JsonProperty("default_profile_image")]
-        public bool hoge { get; set; }
-        [JsonProperty("description")]
-        public string hoge { get; set; }
-        [JsonProperty("entities")]
-        public Entities hoge { get; set; }
-        [JsonProperty("favourites_count")]
-        public int hoge { get; set; }
-        [JsonProperty("follow_request_sent")]
-        public bool hoge { get; set; }
-        [JsonProperty("following")]
-        public bool hoge { get; set; }
-        [JsonProperty("followers_count")]
-        public int hoge { get; set; }
-        [JsonProperty("friends_count")]
-        public int hoge { get; set; }
-        [JsonProperty("geo_enabled")]
-        public bool hoge { get; set; }
-        [JsonProperty("id")]
-        public long hoge { get; set; }
-        [JsonProperty("id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("is_translator")]
-        public bool hoge { get; set; }
-        [JsonProperty("lang")]
-        public string hoge { get; set; }
-        [JsonProperty("listed_count")]
-        public int hoge { get; set; }
+        [JsonProperty("default_profile", NullValueHandling = NullValueHandling.Ignore)]
+        public bool DefaultProfile { get; set; }
+        [JsonProperty("default_profile_image", NullValueHandling = NullValueHandling.Ignore)]
+        public bool DefaultProfileImage { get; set; }
+        [JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+        public string Description { get; set; }
+        [JsonProperty("entities", NullValueHandling = NullValueHandling.Ignore)]
+        public Entity Entities { get; set; }
+        [JsonProperty("favourites_count", NullValueHandling = NullValueHandling.Ignore)]
+        public int FavouritesCount { get; set; }
+        [JsonProperty("follow_request_sent", NullValueHandling = NullValueHandling.Ignore)]
+        public bool FollowRequestSent { get; set; }
+        [JsonProperty("following", NullValueHandling = NullValueHandling.Ignore)]
+        public bool Following { get; set; }
+        [JsonProperty("followers_count", NullValueHandling = NullValueHandling.Ignore)]
+        public int FollowersCount { get; set; }
+        [JsonProperty("friends_count", NullValueHandling = NullValueHandling.Ignore)]
+        public int FriendsCount { get; set; }
+        [JsonProperty("geo_enabled", NullValueHandling = NullValueHandling.Ignore)]
+        public bool GeoEnabled { get; set; }
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public long Id { get; set; }
+        [JsonProperty("id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string IdStr { get; set; }
+        [JsonProperty("is_translator", NullValueHandling = NullValueHandling.Ignore)]
+        public bool IsTranslator { get; set; }
+        [JsonProperty("lang", NullValueHandling = NullValueHandling.Ignore)]
+        public string Lang { get; set; }
+        [JsonProperty("listed_count", NullValueHandling = NullValueHandling.Ignore)]
+        public int ListedCount { get; set; }
         [JsonProperty("location")]
-        public string hoge { get; set; }
-        [JsonProperty("name")]
-        public string hoge { get; set; }
-        [JsonProperty("notifications")]
-        public bool hoge { get; set; }
-        [JsonProperty("profile_background_color")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_background_image_url")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_background_image_url_https")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_background_tile")]
-        public bool hoge { get; set; }
-        [JsonProperty("profile_banner_url")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_image_url")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_image_url_https")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_link_color")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_sidebar_border_color")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_sidebar_fill_color")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_text_color")]
-        public string hoge { get; set; }
-        [JsonProperty("profile_use_background_image")]
-        public bool hoge { get; set; }
-        [JsonProperty("protected")]
-        public bool hoge { get; set; }
-        [JsonProperty("screen_name")]
-        public string hoge { get; set; }
-        [JsonProperty("show_all_inline_media")]
-        public bool hoge { get; set; }
-        [JsonProperty("status")]
-        public Tweets hoge { get; set; }
-        [JsonProperty("statuses_count")]
-        public int hoge { get; set; }
-        [JsonProperty("time_zone")]
-        public string hoge { get; set; }
-        [JsonProperty("url")]
-        public string hoge { get; set; }
-        [JsonProperty("utc_offset")]
-        public int hoge { get; set; }
-        [JsonProperty("verified")]
-        public bool hoge { get; set; }
-        [JsonProperty("withheld_in_countries")]
-        public string hoge { get; set; }
-        [JsonProperty("withheld_scope")]
-        public string hoge { get; set; }
+        public string Location { get; set; }
+        [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
+        public string Name { get; set; }
+        [JsonProperty("notifications", NullValueHandling = NullValueHandling.Ignore)]
+        public bool Notifications { get; set; }
+        [JsonProperty("profile_background_color", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileBackgroundColor { get; set; }
+        [JsonProperty("profile_background_image_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileBackgroundImage_url { get; set; }
+        [JsonProperty("profile_background_image_url_https", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileBackgroundImageUrlHttps { get; set; }
+        [JsonProperty("profile_background_tile", NullValueHandling = NullValueHandling.Ignore)]
+        public bool ProfileBackgroundTile { get; set; }
+        [JsonProperty("profile_banner_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileBannerUrl { get; set; }
+        [JsonProperty("profile_image_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileImageUrl { get; set; }
+        [JsonProperty("profile_image_url_https", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileImageUrlHttps { get; set; }
+        [JsonProperty("profile_link_color", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileLinkColor { get; set; }
+        [JsonProperty("profile_sidebar_border_color", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileSidebarBorderColor { get; set; }
+        [JsonProperty("profile_sidebar_fill_color", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileSidebarFillColor { get; set; }
+        [JsonProperty("profile_text_color", NullValueHandling = NullValueHandling.Ignore)]
+        public string ProfileTextColor { get; set; }
+        [JsonProperty("profile_use_background_image", NullValueHandling = NullValueHandling.Ignore)]
+        public bool ProfileUseBackgroundImage { get; set; }
+        [JsonProperty("protected", NullValueHandling = NullValueHandling.Ignore)]
+        public bool Protected { get; set; }
+        [JsonProperty("screen_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string ScreenName { get; set; }
+        [JsonProperty("show_all_inline_media", NullValueHandling = NullValueHandling.Ignore)]
+        public bool ShowAllInlineMedia { get; set; }
+        [JsonProperty("status", NullValueHandling = NullValueHandling.Ignore)]
+        public Tweet Status { get; set; }
+        [JsonProperty("statuses_count", NullValueHandling = NullValueHandling.Ignore)]
+        public int StatusesCount { get; set; }
+        [JsonProperty("time_zone", NullValueHandling = NullValueHandling.Ignore)]
+        public string TimeZone { get; set; }
+        [JsonProperty("url", NullValueHandling = NullValueHandling.Ignore)]
+        public string Url { get; set; }
+        [JsonProperty("utc_offset", NullValueHandling = NullValueHandling.Ignore)]
+        public int UtcOffset { get; set; }
+        [JsonProperty("verified", NullValueHandling = NullValueHandling.Ignore)]
+        public bool Verified { get; set; }
+        [JsonProperty("withheld_in_countries", NullValueHandling = NullValueHandling.Ignore)]
+        public string WithheldInCountries { get; set; }
+        [JsonProperty("withheld_scope", NullValueHandling = NullValueHandling.Ignore)]
+        public string WithheldScope { get; set; }
     }
 
     /// <summary>
     /// 
     /// </summary>
-    public class Tweets
+    public class UserIds
+    {
+        // https://dev.twitter.com/docs/api/1.1/get/friends/ids
+        // https://dev.twitter.com/docs/api/1.1/get/followers/ids
+
+        [JsonProperty("ids", NullValueHandling = NullValueHandling.Ignore)]
+        public List<long> Ids { get; set; }
+        [JsonProperty("next_cursor", NullValueHandling = NullValueHandling.Ignore)]
+        public long NextCursor { get; set; }
+        [JsonProperty("next_cursor_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string NextCursor_str { get; set; }
+        [JsonProperty("previous_cursor", NullValueHandling = NullValueHandling.Ignore)]
+        public long PreviousCursor { get; set; }
+        [JsonProperty("previous_cursor_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string PreviousCursorStr { get; set; }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public class Tweet
     {
         // https://dev.twitter.com/docs/platform-objects/tweets
-        [JsonProperty("contributors")]
-        public List<Contributors> hoge { get; set; }
-        [JsonProperty("coordinates")]
-        public List<Coordinates> hoge { get; set; }
-        [JsonProperty("created_at")]
-        public string hoge { get; set; }
-        [JsonProperty("current_user_retweet")]
-        public object hoge { get; set; }
-        [JsonProperty("entities")]
-        public Entities hoge { get; set; }
-        [JsonProperty("favorited")]
-        public bool hoge { get; set; }
-        [JsonProperty("id")]
-        public long hoge { get; set; }
-        [JsonProperty("id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("in_reply_to_screen_name")]
-        public string hoge { get; set; }
-        [JsonProperty("in_reply_to_status_id")]
-        public long hoge { get; set; }
-        [JsonProperty("in_reply_to_status_id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("in_reply_to_user_id")]
-        public long hoge { get; set; }
-        [JsonProperty("in_reply_to_user_id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("place")]
-        public Places hoge { get; set; }
-        [JsonProperty("possibly_sensitive")]
-        public bool hoge { get; set; }
-        [JsonProperty("scopes")]
-        public object hoge { get; set; }
-        [JsonProperty("retweet_count")]
-        public int hoge { get; set; }
-        [JsonProperty("retweeted")]
-        public bool hoge { get; set; }
-        [JsonProperty("source")]
-        public string hoge { get; set; }
-        [JsonProperty("text")]
-        public string hoge { get; set; }
-        [JsonProperty("truncated")]
-        public bool hoge { get; set; }
-        [JsonProperty("user")]
-        public Users hoge { get; set; }
-        [JsonProperty("withheld_copyright")]
-        public bool hoge { get; set; }
-        [JsonProperty("withheld_in_countries")]
-        public List<string> hoge { get; set; }
-        [JsonProperty("withheld_scope")]
-        public string hoge { get; set; }
+        [JsonProperty("contributors", NullValueHandling = NullValueHandling.Ignore)]
+        public List<Contributor> Contributors { get; set; }
+        [JsonProperty("coordinates", NullValueHandling = NullValueHandling.Ignore)]
+        public List<Coordinate> Coordinates { get; set; }
+        [JsonProperty("created_at", NullValueHandling = NullValueHandling.Ignore)]
+        public string _createdAt { get; set; }
+        [JsonIgnore]
+        private DateTime __createdAt;
+        [JsonIgnore]
+        public DateTime CreatedAt
+        {
+            get
+            {
+
+                if (!String.IsNullOrEmpty(_createdAt) && __createdAt == DateTime.MinValue) 
+                {
+                    __createdAt = Utility.ParseDateTime(_createdAt);
+                }
+                return __createdAt;
+            }
+            set
+            {
+                __createdAt = value;
+            }
+        }
+        [JsonProperty("current_user_retweet", NullValueHandling = NullValueHandling.Ignore)]
+        public object CurrentUserRetweet { get; set; }
+        [JsonProperty("entities", NullValueHandling = NullValueHandling.Ignore)]
+        public Entity Entities { get; set; }
+        [JsonProperty("favorited", NullValueHandling = NullValueHandling.Ignore)]
+        public bool Favorited { get; set; }
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public long Id { get; set; }
+        [JsonProperty("id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string IdStr { get; set; }
+        [JsonProperty("in_reply_to_screen_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string InReplyToScreenName { get; set; }
+        [JsonProperty("in_reply_to_status_id", NullValueHandling = NullValueHandling.Ignore)]
+        public long InReplyToStatusId { get; set; }
+        [JsonProperty("in_reply_to_status_id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string InReplyToStatusIdStr { get; set; }
+        [JsonProperty("in_reply_to_user_id", NullValueHandling = NullValueHandling.Ignore)]
+        public long InReplyToUserId { get; set; }
+        [JsonProperty("in_reply_to_user_id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string InReplyToUserIdStr { get; set; }
+        [JsonProperty("place", NullValueHandling = NullValueHandling.Ignore)]
+        public Place Place { get; set; }
+        [JsonProperty("possibly_sensitive", NullValueHandling = NullValueHandling.Ignore)]
+        public bool PossiblySensitive { get; set; }
+        [JsonProperty("scopes", NullValueHandling = NullValueHandling.Ignore)]
+        public object Scopes { get; set; }
+        [JsonProperty("retweet_count", NullValueHandling = NullValueHandling.Ignore)]
+        public int RetweetCount { get; set; }
+        [JsonProperty("retweeted", NullValueHandling = NullValueHandling.Ignore)]
+        public bool Retweeted { get; set; }
+        [JsonProperty("source", NullValueHandling = NullValueHandling.Ignore)]
+        public string Source { get; set; }
+        [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
+        public string _text { get; set; }
+        [JsonIgnore]
+        public string Text
+        {
+            get
+            {
+                if (!String.IsNullOrEmpty(_text) && _text == null)
+                {
+                    _text = Utility.UnescapeCharReference(_text);
+                }
+
+                return _text ?? "";
+            }
+            set
+            {
+                _text = value;
+            }
+        }
+        [JsonProperty("truncated", NullValueHandling = NullValueHandling.Ignore)]
+        public bool Truncated { get; set; }
+        [JsonProperty("user", NullValueHandling = NullValueHandling.Ignore)]
+        public User User { get; set; }
+        [JsonProperty("withheld_copyright", NullValueHandling = NullValueHandling.Ignore)]
+        public bool WithheldCopyright { get; set; }
+        [JsonProperty("withheld_in_countries", NullValueHandling = NullValueHandling.Ignore)]
+        public List<string> WithheldInCountries { get; set; }
+        [JsonProperty("withheld_scope", NullValueHandling = NullValueHandling.Ignore)]
+        public string WithheldScope { get; set; }
+        [JsonProperty("retweeted_status", NullValueHandling = NullValueHandling.Ignore)]
+        public Tweet RetweetedStatus { get; set; }
     }
 
     /// <summary>
     /// 
     /// </summary>
-    public class Entities
+    public class Entity
     {
-        [JsonProperty("hashtags")]
-        public List<EntitiesHashtags> hoge { get; set; }
+        [JsonProperty("hashtags", NullValueHandling = NullValueHandling.Ignore)]
+        public List<EntitiesHashtag> Hashtags { get; set; }
         [JsonProperty("media")]
-        public List<EntitiesMedia> hoge { get; set; }
-        [JsonProperty("urls")]
-        public List<EntitiesUrl> hoge { get; set; }
-        [JsonProperty("user_mentions")]
-        public List<EntitiesUserMention> hoge { get; set; }
+        public List<EntitiesMedia> Media { get; set; }
+        [JsonProperty("urls", NullValueHandling = NullValueHandling.Ignore)]
+        public List<EntitiesUrl> Urls { get; set; }
+        [JsonProperty("user_mentions", NullValueHandling = NullValueHandling.Ignore)]
+        public List<EntitiesUserMention> UserMentions { get; set; }
     }
 
     /// <summary>
     /// 
     /// </summary>
-    public class Coordinates
+    public class Coordinate
     {
         // https://dev.twitter.com/docs/platform-objects/tweets#obj-coordinates
-        [JsonProperty("coordinates")]
-        public List<float> hoge { get; set; }
-        [JsonProperty("type")]
-        public string hoge { get; set; }
+        [JsonProperty("coordinates", NullValueHandling = NullValueHandling.Ignore)]
+        public List<float> Coordinates { get; set; }
+        [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
+        public string Type { get; set; }
     }
 
     /// <summary>
     /// 
     /// </summary>
-    public class Contributors
+    public class Contributor
     {
         // https://dev.twitter.com/docs/platform-objects/tweets#obj-contributors
-        [JsonProperty("id")]
-        public long hoge { get; set; }
-        [JsonProperty("id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("screen_name")]
-        public string hoge { get; set; }
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public long Id { get; set; }
+        [JsonProperty("id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string IdStr { get; set; }
+        [JsonProperty("screen_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string ScreenName { get; set; }
     }
 
     /// <summary>
     /// 
     /// </summary>
-    public class Places
+    public class Place
     {
         // https://dev.twitter.com/docs/platform-objects/places
-        [JsonProperty("attributes")]
-        public object hoge { get; set; }
-        [JsonProperty("bounding_box")]
-        public PlacesBoundingBox hoge { get; set; }
-        [JsonProperty("country")]
-        public string hoge { get; set; }
-        [JsonProperty("country_code")]
-        public string hoge { get; set; }
-        [JsonProperty("full_name")]
-        public string hoge { get; set; }
-        [JsonProperty("id")]
-        public string hoge { get; set; }
-        [JsonProperty("name")]
-        public string hoge { get; set; }
-        [JsonProperty("place_type")]
-        public string hoge { get; set; }
-        [JsonProperty("url")]
-        public string hoge { get; set; }
+        [JsonProperty("attributes", NullValueHandling = NullValueHandling.Ignore)]
+        public object Attributes { get; set; }
+        [JsonProperty("bounding_box", NullValueHandling = NullValueHandling.Ignore)]
+        public PlacesBoundingBox BoundingBox { get; set; }
+        [JsonProperty("country", NullValueHandling = NullValueHandling.Ignore)]
+        public string Country { get; set; }
+        [JsonProperty("country_code", NullValueHandling = NullValueHandling.Ignore)]
+        public string CountryCode { get; set; }
+        [JsonProperty("full_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string FullName { get; set; }
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public string Id { get; set; }
+        [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
+        public string Name { get; set; }
+        [JsonProperty("place_type", NullValueHandling = NullValueHandling.Ignore)]
+        public string PlaceType { get; set; }
+        [JsonProperty("url", NullValueHandling = NullValueHandling.Ignore)]
+        public string Url { get; set; }
     }
 
     /// <summary>
@@ -1689,21 +1732,21 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     public class PlacesBoundingBox
     {
         // https://dev.twitter.com/docs/platform-objects/places#obj-boundingbox
-        [JsonProperty("coordinates")]
-        public object hoge { get; set; }
-        [JsonProperty("type")]
-        public string hoge { get; set; }
+        [JsonProperty("coordinates", NullValueHandling = NullValueHandling.Ignore)]
+        public List<List<List<float>>> Coordinates { get; set; }
+        [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
+        public string Type { get; set; }
     }
 
     /// <summary>
     /// 
     /// </summary>
-    public class EntitiesHashtags
+    public class EntitiesHashtag
     {
-        [JsonProperty("indices")]
-        public List<int> hoge { get; set; }
-        [JsonProperty("text")]
-        public string hoge { get; set; }
+        [JsonProperty("indices", NullValueHandling = NullValueHandling.Ignore)]
+        public List<int> Indices { get; set; }
+        [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
+        public string Text { get; set; }
     }
 
     /// <summary>
@@ -1711,30 +1754,30 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class EntitiesMedia
     {
-        [JsonProperty("display_url")]
-        public string hoge { get; set; }
-        [JsonProperty("expanded_url")]
-        public string hoge { get; set; }
-        [JsonProperty("id")]
-        public long hoge { get; set; }
-        [JsonProperty("id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("indices")]
-        public List<int> hoge { get; set; }
-        [JsonProperty("media_url")]
-        public string hoge { get; set; }
-        [JsonProperty("media_url_https")]
-        public string hoge { get; set; }
-        [JsonProperty("sizes")]
-        public EntitiesSizes hoge { get; set; }
-        [JsonProperty("source_status_id")]
-        public long hoge { get; set; }
-        [JsonProperty("source_status_id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("type")]
-        public string hoge { get; set; }
-        [JsonProperty("url")]
-        public string hoge { get; set; }
+        [JsonProperty("display_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string DisplayUrl { get; set; }
+        [JsonProperty("expanded_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string ExpandedUrl { get; set; }
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public long Id { get; set; }
+        [JsonProperty("id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string IdStr { get; set; }
+        [JsonProperty("indices", NullValueHandling = NullValueHandling.Ignore)]
+        public List<int> Indices { get; set; }
+        [JsonProperty("media_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string MediaUrl { get; set; }
+        [JsonProperty("media_url_https", NullValueHandling = NullValueHandling.Ignore)]
+        public string MediaUrlHttps { get; set; }
+        [JsonProperty("sizes", NullValueHandling = NullValueHandling.Ignore)]
+        public EntitiesSizes Sizes { get; set; }
+        [JsonProperty("source_status_id", NullValueHandling = NullValueHandling.Ignore)]
+        public long SourceStatusId { get; set; }
+        [JsonProperty("source_status_id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string SourceStatusIdStr { get; set; }
+        [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
+        public string Type { get; set; }
+        [JsonProperty("url", NullValueHandling = NullValueHandling.Ignore)]
+        public string Url { get; set; }
     }
 
     /// <summary>
@@ -1742,12 +1785,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class EntitiesSize
     {
-        [JsonProperty("h")]
-        public int hoge { get; set; }
-        [JsonProperty("resize")]
-        public string hoge { get; set; }
-        [JsonProperty("w")]
-        public int hoge { get; set; }
+        [JsonProperty("h", NullValueHandling = NullValueHandling.Ignore)]
+        public int H { get; set; }
+        [JsonProperty("resize", NullValueHandling = NullValueHandling.Ignore)]
+        public string Resize { get; set; }
+        [JsonProperty("w", NullValueHandling = NullValueHandling.Ignore)]
+        public int W { get; set; }
     }
 
     /// <summary>
@@ -1755,14 +1798,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class EntitiesSizes
     {
-        [JsonProperty("thumb")]
-        public EntitiesSize hoge { get; set; }
-        [JsonProperty("large")]
-        public EntitiesSize hoge { get; set; }
-        [JsonProperty("medium")]
-        public EntitiesSize hoge { get; set; }
-        [JsonProperty("small")]
-        public EntitiesSize hoge { get; set; }
+        [JsonProperty("thumb", NullValueHandling = NullValueHandling.Ignore)]
+        public EntitiesSize Thumb { get; set; }
+        [JsonProperty("large", NullValueHandling = NullValueHandling.Ignore)]
+        public EntitiesSize Large { get; set; }
+        [JsonProperty("medium", NullValueHandling = NullValueHandling.Ignore)]
+        public EntitiesSize Medium { get; set; }
+        [JsonProperty("small", NullValueHandling = NullValueHandling.Ignore)]
+        public EntitiesSize Small { get; set; }
     }
 
     /// <summary>
@@ -1770,14 +1813,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class EntitiesUrl
     {
-        [JsonProperty("display_url")]
-        public string hoge { get; set; }
-        [JsonProperty("expanded_url")]
-        public string hoge { get; set; }
-        [JsonProperty("indices")]
-        public List<int> hoge { get; set; }
-        [JsonProperty("url")]
-        public string hoge { get; set; }
+        [JsonProperty("display_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string DisplayUrl { get; set; }
+        [JsonProperty("expanded_url", NullValueHandling = NullValueHandling.Ignore)]
+        public string ExpandedUrl { get; set; }
+        [JsonProperty("indices", NullValueHandling = NullValueHandling.Ignore)]
+        public List<int> Indices { get; set; }
+        [JsonProperty("url", NullValueHandling = NullValueHandling.Ignore)]
+        public string Url { get; set; }
     }
 
     /// <summary>
@@ -1785,16 +1828,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class EntitiesUserMention
     {
-        [JsonProperty("id")]
-        public long hoge { get; set; }
-        [JsonProperty("id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("indices")]
-        public List<int> hoge { get; set; }
-        [JsonProperty("name")]
-        public string hoge { get; set; }
-        [JsonProperty("screen_name")]
-        public string hoge { get; set; }
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public long Id { get; set; }
+        [JsonProperty("id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string IdStr { get; set; }
+        [JsonProperty("indices", NullValueHandling = NullValueHandling.Ignore)]
+        public List<int> Indices { get; set; }
+        [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
+        public string Name { get; set; }
+        [JsonProperty("screen_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string ScreenName { get; set; }
     }
 
     /// <summary>
@@ -1802,28 +1845,35 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class DirectMessage
     {
-        [JsonProperty("created_at")]
-        public string hoge { get; set; }
-        [JsonProperty("entities")]
-        public Entities hoge { get; set; }
-        [JsonProperty("id")]
-        public long hoge { get; set; }
-        [JsonProperty("id_str")]
-        public string hoge { get; set; }
-        [JsonProperty("recipient")]
-        public Users hoge { get; set; }
-        [JsonProperty("recipient_id")]
-        public long hoge { get; set; }
-        [JsonProperty("recipient_screen_name")]
-        public string hoge { get; set; }
-        [JsonProperty("sender")]
-        public Users hoge { get; set; }
-        [JsonProperty("sender_id")]
-        public long hoge { get; set; }
-        [JsonProperty("sender_screen_name")]
-        public string hoge { get; set; }
-        [JsonProperty("text")]
-        public string hoge { get; set; }
+        [JsonProperty("created_at", NullValueHandling = NullValueHandling.Ignore)]
+        public string _createdAt { get; set; }
+        [JsonIgnore]
+        public DateTime CreatedAt
+        {
+            get
+            {
+                return Utility.ParseDateTime(_createdAt);
+            }
+        }
+        [JsonProperty("entities", NullValueHandling = NullValueHandling.Ignore)]
+        public Entity Entities { get; set; }
+        [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
+        public long Id { get; set; }
+        [JsonProperty("id_str", NullValueHandling = NullValueHandling.Ignore)]
+        public string IdStr { get; set; }
+        [JsonProperty("recipient", NullValueHandling = NullValueHandling.Ignore)]
+        public User Recipient { get; set; }
+        [JsonProperty("recipient_id", NullValueHandling = NullValueHandling.Ignore)]
+        public long RecipientId { get; set; }
+        [JsonProperty("recipient_screen_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string RecipientScreenName { get; set; }
+        [JsonProperty("sender", NullValueHandling = NullValueHandling.Ignore)]
+        public User Sender { get; set; }
+        [JsonProperty("sender_id", NullValueHandling = NullValueHandling.Ignore)]
+        public long SenderId { get; set; }
+        [JsonProperty("sender_screen_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string SenderScreeenName { get; set; }
+        [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
+        public string Text { get; set; }
     }
-
 }

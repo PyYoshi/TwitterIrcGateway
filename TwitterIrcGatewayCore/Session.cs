@@ -772,12 +772,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="inReplyToId"></param>
         /// <param name="callback"></param>
         /// <returns></returns>
-        public Deferred.DeferredState<Boolean> UpdateStatusWithReceiverDeferred(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
+        public Deferred.DeferredState<Boolean> UpdateStatusWithReceiverDeferred(String receiver, String message, Int64 inReplyToId, Action<Tweet> callback)
         {
             return UpdateStatusWithReceiverDeferredInternal(receiver, message, inReplyToId, callback);
         }
 
-        private Deferred.DeferredState<Boolean> UpdateStatusWithReceiverDeferredInternal(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
+        private Deferred.DeferredState<Boolean> UpdateStatusWithReceiverDeferredInternal(String receiver, String message, Int64 inReplyToId, Action<Tweet> callback)
         {
             // 140文字制限のチェック
             if (!CheckMessageLength(receiver, message))
@@ -785,7 +785,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 return Deferred.DeferredInvoke<Boolean>(() => false, 0);
             }
 
-            Deferred.DeferredState<Boolean> state = Deferred.DeferredInvoke<String, String, Int64, Action<Status>, Boolean>(UpdateStatusWithReceiver, Config.UpdateDelayTime * 1000, (asyncResult) => {
+            Deferred.DeferredState<Boolean> state = Deferred.DeferredInvoke<String, String, Int64, Action<Tweet>, Boolean>(UpdateStatusWithReceiver, Config.UpdateDelayTime * 1000, (asyncResult) =>
+            {
                 Deferred.DeferredState<Boolean> state_ = asyncResult.AsyncState as Deferred.DeferredState<Boolean>;
                 
                 // 送信リストから外す
@@ -831,12 +832,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="inReplyToId"></param>
         /// <param name="callback"></param>
         /// <returns></returns>
-        public Boolean UpdateStatusWithReceiver(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
+        public Boolean UpdateStatusWithReceiver(String receiver, String message, Int64 inReplyToId, Action<Tweet> callback)
         {
             return UpdateStatusWithReceiverInternal(receiver, message, inReplyToId, callback);
         }
 
-        private Boolean UpdateStatusWithReceiverInternal(String receiver, String message, Int64 inReplyToId, Action<Status> callback)
+        private Boolean UpdateStatusWithReceiverInternal(String receiver, String message, Int64 inReplyToId, Action<Tweet> callback)
         {
             Boolean isRetry = false;
             Boolean succeed = true;
@@ -857,20 +858,20 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     try
                     {
                         // InReplyId が 0 じゃないときは指定されている扱い
-                        Status status = (inReplyToId > 0) ? UpdateStatus(message, inReplyToId) : UpdateStatus(message);
-                        message = status.Text;
+                        Tweet tweet = (inReplyToId > 0) ? UpdateStatus(message, inReplyToId) : UpdateStatus(message);
+                        message = tweet.Text;
                         if (callback != null)
                         {
                             try
                             {
-                                callback(status);
+                                callback(tweet);
                             }
                             catch (Exception e)
                             {
                                 Logger.Error(e.ToString());
                             }
                         }
-                        if (!FireEvent(UpdateStatusRequestCommited, new TimelineStatusEventArgs(status))) return false;
+                        if (!FireEvent(UpdateStatusRequestCommited, new TimelineStatusEventArgs(tweet))) return false;
                     }
                     catch (TwitterServiceException tse)
                     {
@@ -937,9 +938,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public Deferred.DeferredState<Status> UpdateStatusAsync(String message)
+        public Deferred.DeferredState<Tweet> UpdateStatusAsync(String message)
         {
-            return Deferred.DeferredInvoke<String, Status>(UpdateStatus, Config.UpdateDelayTime * 1000, message);
+            return Deferred.DeferredInvoke<String, Tweet>(UpdateStatus, Config.UpdateDelayTime * 1000, message);
         }
 
         /// <summary>
@@ -947,9 +948,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public Deferred.DeferredState<Status> UpdateStatusAsync(String message, Int64 inReplyToStatusId)
+        public Deferred.DeferredState<Tweet> UpdateStatusAsync(String message, Int64 inReplyToStatusId)
         {
-            return Deferred.DeferredInvoke<String, Int64, Status>(UpdateStatus, Config.UpdateDelayTime * 1000, message, inReplyToStatusId);
+            return Deferred.DeferredInvoke<String, Int64, Tweet>(UpdateStatus, Config.UpdateDelayTime * 1000, message, inReplyToStatusId);
         }
 
         /// <summary>
@@ -957,7 +958,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public Status UpdateStatus(String message)
+        public Tweet UpdateStatus(String message)
         {
             // 送信(もし以前のスタイルのReplyが有効の場合には対象のユーザの最後に受信したIDにくっつける)
             if (_config.EnableOldStyleReply)
@@ -980,12 +981,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="message"></param>
         /// <param name="inReplyToStatusId"></param>
         /// <returns></returns>
-        public Status UpdateStatus(String message, Int64 inReplyToStatusId)
+        public Tweet UpdateStatus(String message, Int64 inReplyToStatusId)
         {
             StatusUpdateEventArgs eventArgs = new StatusUpdateEventArgs(message, inReplyToStatusId);
             if (!FireEvent(PreSendUpdateStatus, eventArgs)) return null;
 
-            Status status = _twitter.UpdateStatus(eventArgs.Text, inReplyToStatusId);
+            Tweet status = _twitter.UpdateStatus(eventArgs.Text, inReplyToStatusId);
                         
             if (status != null)
             {
@@ -1179,7 +1180,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             foreach (String line in lines)
             {
                 PrivMsgMessage privMsg = new PrivMsgMessage();
-                privMsg.SenderNick = message.SenderScreenName;
+                privMsg.SenderNick = message.Sender.ScreenName;
                 privMsg.SenderHost = "twitter@" + Server.ServerName;
                 privMsg.Receiver = CurrentNick;
                 //privMsg.Content = String.Format("{0}: {1}", screenName, text);
@@ -1192,7 +1193,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             SendPing();
 
-            TimelineStatusesEventArgs eventArgs = new TimelineStatusesEventArgs(e.Statuses, _isFirstTime);
+            TimelineStatusesEventArgs eventArgs = new TimelineStatusesEventArgs(e.Tweets, _isFirstTime);
             if (!FireEvent(PreProcessTimelineStatuses, eventArgs)) return;
 
             // 初回だけは先にチェックしておかないとnamesが後から来てジャマ
@@ -1202,9 +1203,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             
             Boolean friendsCheckRequired = e.FriendsCheckRequired;
-            foreach (Status status in e.Statuses.Status)
+            foreach (Tweet tweet in e.Tweets)
             {
-                ProcessTimelineStatus(status, ref friendsCheckRequired);
+                ProcessTimelineStatus(tweet, ref friendsCheckRequired);
             }
             
             // Friendsをチェックするのは成功して、チェックが必要となったとき
@@ -1221,9 +1222,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         void twitter_RepliesReceived(object sender, StatusesUpdatedEventArgs e)
         {
             Boolean dummy = false;
-            foreach (Status status in e.Statuses.Status)
+            foreach (Tweet tweet in e.Tweets)
             {
-                ProcessTimelineStatus(status, ref dummy, false, e.IsFirstTime);
+                ProcessTimelineStatus(tweet, ref dummy, false, e.IsFirstTime);
             }
         }
         #endregion
@@ -1432,7 +1433,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             RunCheck(delegate
             {
-                User[] friends = _twitter.GetFriends(10);
+                List<User> friends = _twitter.GetFriends();
                 _followingUsers = new HashSet<User>();
                 // 保持していてもしょうがないので消す
                 foreach (var friend in friends)
@@ -1480,7 +1481,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             RunCheck(delegate
             {
-                User[] friends = _twitter.GetFriends(10);
+                List<User> friends = _twitter.GetFriends();
 
                 // てきとうに。
                 // 増えた分
@@ -1516,22 +1517,22 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <param name="status"></param>
         /// <param name="friendsCheckRequired"></param>
-        public void ProcessTimelineStatus (Status status, ref Boolean friendsCheckRequired)
+        public void ProcessTimelineStatus (Tweet tweet, ref Boolean friendsCheckRequired)
         {
-            ProcessTimelineStatus(status, ref friendsCheckRequired, false);
+            ProcessTimelineStatus(tweet, ref friendsCheckRequired, false);
         }
-        public void ProcessTimelineStatus(Status status, ref Boolean friendsCheckRequired, Boolean ignoreGatewayCheck)
+        public void ProcessTimelineStatus(Tweet tweet, ref Boolean friendsCheckRequired, Boolean ignoreGatewayCheck)
         {
-            ProcessTimelineStatus(status, ref friendsCheckRequired, ignoreGatewayCheck, _isFirstTime);
+            ProcessTimelineStatus(tweet, ref friendsCheckRequired, ignoreGatewayCheck, _isFirstTime);
         }
-        public void ProcessTimelineStatus(Status status, ref Boolean friendsCheckRequired, Boolean ignoreGatewayCheck, Boolean isFirstTime)
+        public void ProcessTimelineStatus(Tweet tweet, ref Boolean friendsCheckRequired, Boolean ignoreGatewayCheck, Boolean isFirstTime)
         {
-            TimelineStatusEventArgs eventArgs = new TimelineStatusEventArgs(status, status.Text, "PRIVMSG");
+            TimelineStatusEventArgs eventArgs = new TimelineStatusEventArgs(tweet, tweet.Text, "PRIVMSG");
             if (!FireEvent(PreProcessTimelineStatus, eventArgs)) return;
             
             // チェック
             // 自分がゲートウェイを通して発言したものは捨てる
-            if (!ignoreGatewayCheck && (status.User == null || String.IsNullOrEmpty(status.User.ScreenName) || _lastStatusIdsFromGateway.Contains(status.Id)))
+            if (!ignoreGatewayCheck && (tweet.User == null || String.IsNullOrEmpty(tweet.User.ScreenName) || _lastStatusIdsFromGateway.Contains(tweet.Id)))
             {
                 return;
             }
@@ -1539,16 +1540,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             // @だけのReplyにIDをつけるモードがオンの時はStatusのIDを記録する
             if (_config.EnableOldStyleReply)
             {
-                _lastStatusIdsByScreenName[status.User.ScreenName] = status.Id;
+                _lastStatusIdsByScreenName[tweet.User.ScreenName] = tweet.Id;
             }
 
             // friends チェックが必要かどうかを確かめる
             // まだないときは取ってくるフラグを立てる
-            friendsCheckRequired |= !(_followingUsers.Contains(status.User));
+            friendsCheckRequired |= !(_followingUsers.Contains(tweet.User));
             
             // フィルタ
             if (!FireEvent(PreFilterProcessTimelineStatus, eventArgs)) return;
-            FilterArgs filterArgs = new FilterArgs(this, eventArgs.Text, status.User, eventArgs.IRCMessageType, false, status);
+            FilterArgs filterArgs = new FilterArgs(this, eventArgs.Text, tweet.User, eventArgs.IRCMessageType, false, tweet);
             if (!_filter.ExecuteFilters(filterArgs))
             {
                 // 捨てる
@@ -1561,7 +1562,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             if (!FireEvent(PreSendMessageTimelineStatus, eventArgs)) return;
             
             // 送信先を決定する
-            List<RoutedGroup> routedGroups = RoutingStatusMessage(status, eventArgs.Text, eventArgs.IRCMessageType);
+            List<RoutedGroup> routedGroups = RoutingStatusMessage(tweet, eventArgs.Text, eventArgs.IRCMessageType);
             // メインチャンネルを送信先として追加する
             routedGroups.Add(new RoutedGroup()
                              {
@@ -1571,12 +1572,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                                  IsMessageFromSelf            = false,
                                  Text                         = eventArgs.Text
                              });
-            if (!FireEvent(MessageRoutedTimelineStatus, new TimelineStatusRoutedEventArgs(status, eventArgs.Text, routedGroups))) return;
+            if (!FireEvent(MessageRoutedTimelineStatus, new TimelineStatusRoutedEventArgs(tweet, eventArgs.Text, routedGroups))) return;
             
             // 送信する
             foreach (RoutedGroup routedGroup in routedGroups)
             {
-                TimelineStatusGroupEventArgs eventArgsGroup = new TimelineStatusGroupEventArgs(status, routedGroup.Text, routedGroup.IRCMessageType, routedGroup.Group);
+                TimelineStatusGroupEventArgs eventArgsGroup = new TimelineStatusGroupEventArgs(tweet, routedGroup.Text, routedGroup.IRCMessageType, routedGroup.Group);
                 if (!FireEvent(PreSendGroupMessageTimelineStatus, eventArgsGroup)) return;
 
                 String[] lines = eventArgsGroup.Text.Split(new Char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
@@ -1585,13 +1586,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     if (isFirstTime && !_config.DisableNoticeAtFirstTime)
                     {
                         // 初回のときはNOTICE+時間
-                        Send(CreateIRCMessageFromStatusAndType(status, "NOTICE", routedGroup.Group.Name,
+                        Send(CreateIRCMessageFromStatusAndType(tweet, "NOTICE", routedGroup.Group.Name,
                                                                String.Format("{0}: {1}",
-                                                                             status.CreatedAt.ToString("HH:mm"), line)));
+                                                                             tweet.CreatedAt.ToString("HH:mm"), line)));
                     }
                     else
                     {
-                        Send(CreateIRCMessageFromStatusAndType(status, eventArgsGroup.IRCMessageType,
+                        Send(CreateIRCMessageFromStatusAndType(tweet, eventArgsGroup.IRCMessageType,
                                                                routedGroup.Group.Name, line));
                     }
                 }
@@ -1610,7 +1611,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="text"></param>
         /// <param name="ircMessageType"></param>
         /// <returns></returns>
-        public List<RoutedGroup> RoutingStatusMessage(Status status, String text, String ircMessageType)
+        public List<RoutedGroup> RoutingStatusMessage(Tweet tweet, String text, String ircMessageType)
         {
             List<RoutedGroup> routedGroups = new List<RoutedGroup>();
             
@@ -1621,8 +1622,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
                 Boolean isOrMatch = group.IsOrMatch;
                 Boolean isMatched = String.IsNullOrEmpty(group.Topic) ? true : Regex.IsMatch(text, (isOrMatch ? group.Topic.Substring(1) : group.Topic));
-                Boolean isExistsInChannelOrNoMembers = (group.Exists(status.User.ScreenName) || group.Members.Count == 0);
-                Boolean isMessageFromSelf = (_twitterUser != null) ? (status.User.Id == _twitterUser.Id && !group.IgnoreEchoBack) : false;
+                Boolean isExistsInChannelOrNoMembers = (group.Exists(tweet.User.ScreenName) || group.Members.Count == 0);
+                Boolean isMessageFromSelf = (_twitterUser != null) ? (tweet.User.Id == _twitterUser.Id && !group.IgnoreEchoBack) : false;
 
                 // 0: self && !IgnoreEchoback
                 // 1: member exists in channel && match regex
@@ -1646,7 +1647,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
 
         // XXX: IRCクライアントライブラリのアップデートで対応できるけどとりあえず...
-        private IRCMessage CreateIRCMessageFromStatusAndType(Status status, String type, String receiver, String line)
+        private IRCMessage CreateIRCMessageFromStatusAndType(Tweet tweet, String type, String receiver, String line)
         {
             IRCMessage msg;
             switch (type.ToUpperInvariant())
@@ -1658,8 +1659,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 default:
                     msg = new PrivMsgMessage(receiver, line);
                     break;
-            } 
-            msg.SenderNick = status.User.ScreenName;
+            }
+            msg.SenderNick = tweet.User.ScreenName;
             msg.SenderHost = "twitter@" + Server.ServerName;
 
             return msg;

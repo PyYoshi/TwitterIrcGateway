@@ -11,32 +11,32 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
     public interface ITypableMapStatusRepository
     {
         void SetSize(Int32 size);
-        String Add(Status status);
-        Boolean TryGetValue(String typableMapId, out Status status);
+        String Add(Tweet tweet);
+        Boolean TryGetValue(String typableMapId, out Tweet tweet);
     }
     
     public class TypableMapStatusMemoryRepository : ITypableMapStatusRepository
     {
-        private TypableMap<Status> _typableMap;
+        private TypableMap<Tweet> _typableMap;
         public TypableMapStatusMemoryRepository(Int32 size)
         {
-            _typableMap = new TypableMap<Status>(size);
+            _typableMap = new TypableMap<Tweet>(size);
         }
 
         #region ITypableMapStatusRepository メンバ
         public void SetSize(int size)
         {
-            _typableMap = new TypableMap<Status>(size);
+            _typableMap = new TypableMap<Tweet>(size);
         }
 
-        public String Add(Status status)
+        public String Add(Tweet tweet)
         {
-            return _typableMap.Add(status);
+            return _typableMap.Add(tweet);
         }
 
-        public Boolean TryGetValue(String typableMapId, out Status status)
+        public Boolean TryGetValue(String typableMapId, out Tweet tweet)
         {
-            return _typableMap.TryGetValue(typableMapId, out status);
+            return _typableMap.TryGetValue(typableMapId, out tweet);
         }
         #endregion
     }
@@ -44,36 +44,36 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
 
     public class TypableMapStatusMemoryRepository2 : ITypableMapStatusRepository
     {
-        private TypableMap<StorageItem<Status>> _typableMap;
-        private static Storage<Int64, Status> _storageStatus = new Storage<Int64, Status>(v => v.Id, 100);
+        private TypableMap<StorageItem<Tweet>> _typableMap;
+        private static Storage<Int64, Tweet> _storageStatus = new Storage<Int64, Tweet>(v => v.Id, 100);
 
         public TypableMapStatusMemoryRepository2(Int32 size)
         {
-            _typableMap = new TypableMap<StorageItem<Status>>(size);
+            _typableMap = new TypableMap<StorageItem<Tweet>>(size);
         }
 
         #region TypableMapStatusMemoryRepository2 メンバ
         public void SetSize(int size)
         {
-            _typableMap = new TypableMap<StorageItem<Status>>(size);
+            _typableMap = new TypableMap<StorageItem<Tweet>>(size);
         }
 
-        public String Add(Status status)
+        public String Add(Tweet tweet)
         {
-            StorageItem<Status> storageItem = _storageStatus.AddOrUpdate(status);
+            StorageItem<Tweet> storageItem = _storageStatus.AddOrUpdate(tweet);
             return _typableMap.Add(storageItem);
         }
 
-        public Boolean TryGetValue(String typableMapId, out Status status)
+        public Boolean TryGetValue(String typableMapId, out Tweet tweet)
         {
-            StorageItem<Status> storageItem;
+            StorageItem<Tweet> storageItem;
             if (_typableMap.TryGetValue(typableMapId, out storageItem))
             {
-                status = storageItem.Value;
+                tweet = storageItem.Value;
                 return true;
             }
 
-            status = null;
+            tweet = null;
             return false;
         }
         #endregion
@@ -201,19 +201,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
                             Url = originalUser.Url
                        };
         }
-        private Status CloneStatus(Status originalStatus)
+        private Tweet CloneStatus(Tweet originalTweet)
         {
-            return new Status
+            return new Tweet
                        {
-                           Id = originalStatus.Id,
-                           _createdAtOriginal = originalStatus._createdAtOriginal,
-                           _textOriginal = originalStatus._textOriginal,
-                           Favorited = originalStatus.Favorited,
-                           InReplyToStatusId = originalStatus.InReplyToStatusId,
-                           InReplyToUserId = originalStatus.InReplyToUserId,
+                           Id = originalTweet.Id,
+                           _createdAt = originalTweet._createdAt,
+                           _text = originalTweet._text,
+                           Favorited = originalTweet.Favorited,
+                           InReplyToStatusId = originalTweet.InReplyToStatusId,
+                           InReplyToUserId = originalTweet.InReplyToUserId,
                            RetweetedStatus = null,
-                           Source = originalStatus.Source,
-                           Truncated = originalStatus.Truncated,
+                           Source = originalTweet.Source,
+                           Truncated = originalTweet.Truncated,
                            User = null
                        };
         }
@@ -237,22 +237,22 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.TypableMap
             _typableMap = new TypableMap<Int64>(size);
         }
 
-        public String Add(Status status)
+        public String Add(Tweet tweet)
         {
-            return _typableMap.Add(status.Id);
+            return _typableMap.Add(tweet.Id);
         }
 
-        public Boolean TryGetValue(String typableMapId, out Status status)
+        public Boolean TryGetValue(String typableMapId, out Tweet tweet)
         {
             Int64 statusId;
-            status = null;
+            tweet = null;
 
             if (_typableMap.TryGetValue(typableMapId, out statusId))
             {
                 try
                 {
-                    status = _session.TwitterService.GetStatusById(statusId);
-                    return (status != null);
+                    tweet = _session.TwitterService.GetStatusById(statusId);
+                    return (tweet != null);
                 }
                 catch (TwitterServiceException)
                 {}

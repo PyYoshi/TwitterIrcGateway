@@ -35,8 +35,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             _recentStatuses[e.Group.Name].Add(new RecentLogItem()
                                                   {
                                                       Text = e.Text,
-                                                      DateTime = e.Status.CreatedAt,
-                                                      Sender = e.Status.User.ScreenName
+                                                      DateTime = e.Tweet.CreatedAt,
+                                                      Sender = e.Tweet.User.ScreenName
                                                   });
             if (_recentStatuses[e.Group.Name].Count > MaxCount)
             {

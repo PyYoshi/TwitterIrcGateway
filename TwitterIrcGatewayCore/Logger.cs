@@ -66,17 +66,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public override void Error(string message)
         {
-            TraceSource.TraceEvent(TraceEventType.Error, CurrentSession.TwitterUser.Id, message);
+            TraceSource.TraceEvent(TraceEventType.Error, (Int32)CurrentSession.TwitterUser.Id, message);
             TraceSource.Flush();
         }
         public override void Information(string message)
         {
-            TraceSource.TraceEvent(TraceEventType.Information, CurrentSession.TwitterUser.Id, message);
+            TraceSource.TraceEvent(TraceEventType.Information, (Int32)CurrentSession.TwitterUser.Id, message);
             TraceSource.Flush();
         }
         public override void Warning(string message)
         {
-            TraceSource.TraceEvent(TraceEventType.Warning, CurrentSession.TwitterUser.Id, message);
+            TraceSource.TraceEvent(TraceEventType.Warning, (Int32)CurrentSession.TwitterUser.Id, message);
             TraceSource.Flush();
         }
     }

@@ -38,7 +38,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             // TypableMap
             if (CurrentSession.Config.EnableTypableMap)
             {
-                String typableMapId = _typableMapCommands.TypableMap.Add(e.Status);
+                String typableMapId = _typableMapCommands.TypableMap.Add(e.Tweet);
                 // TypableMapKeyColorNumber = -1 の場合には色がつかなくなる
                 if (CurrentSession.Config.TypableMapKeyColorNumber < 0)
                     e.Text = String.Format("{0} ({1})", e.Text, typableMapId);

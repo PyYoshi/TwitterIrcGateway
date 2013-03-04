@@ -22,7 +22,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
         public void Search(String keywords)
         {
             /*
-             * FIXME: Search APIを使用するように変更
+             * TODO: Search APIを使用するように変更
              */
             try
             {
@@ -75,13 +75,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
         [Description("指定したユーザのタイムラインを取得します")]
         public void Timeline(params String[] screenNames)
         {
-            List<Status> statuses = new List<Status>();
+            List<Tweet> tweets = new List<Tweet>();
             foreach (var screenName in screenNames)
             {
                 try
                 {
-                    var retStatuses = CurrentSession.TwitterService.GetTimelineByScreenName(screenName, new DateTime(), Console.Config.SearchCount);
-                    statuses.AddRange(retStatuses.Status);
+                    List<Tweet> retTweets = CurrentSession.TwitterService.GetTimelineByScreenName(screenName, 0, Console.Config.SearchCount);
+                    tweets.AddRange(retTweets);
                 }
                 catch (TwitterServiceException te)
                 {
@@ -95,21 +95,21 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
                 }
             }
 
-            ShowStatuses(statuses);
+            ShowStatuses(tweets);
         }
 
         [Description("指定したユーザの Favorites を取得します")]
         public void Favorites(params String[] screenNames)
         {
-            List<Status> statuses = new List<Status>();
+            List<Tweet> tweets = new List<Tweet>();
             foreach (var screenName in screenNames)
             {
                 try
                 {
-                    var retStatuses = CurrentSession.TwitterService.GetFavoritesByScreenName(screenName, 1);
-                    statuses.AddRange(retStatuses.Status);
-                    if (statuses.Count > Console.Config.FavoritesCount)
-                        statuses.RemoveRange(10, statuses.Count - 10);
+                    List<Tweet> retTweets = CurrentSession.TwitterService.GetTimelineByScreenName(screenName, 0, Console.Config.SearchCount);
+                    tweets.AddRange(retTweets);
+                    if (tweets.Count > Console.Config.FavoritesCount)
+                        tweets.RemoveRange(10, tweets.Count - 10);
                 }
                 catch (TwitterServiceException te)
                 {
@@ -123,7 +123,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
                 }
             }
 
-            ShowStatuses(statuses);
+            ShowStatuses(tweets);
         }
 
         [Description("指定したユーザを follow します")]
@@ -149,11 +149,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
         {
             BlockOrUnblock(false, screenNames);
         }
-        // Context
 
         /*
-         * TODO: 
-         * 以下のContextを追加
+         * TODO: 以下のContextを追加
          *  ・スパム報告/スパム報告取り消し
          */
 
@@ -210,17 +208,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
             }
         }
 
-        private void ShowStatuses(List<Status> statuses)
+        private void ShowStatuses(List<Tweet> tweets)
         {
-            statuses.Sort((a, b) => ((a.Id == b.Id) ? 0 : ((a.Id > b.Id) ? 1 : -1)));
-            foreach (var status in statuses)
+            tweets.Sort((a, b) => ((a.Id == b.Id) ? 0 : ((a.Id > b.Id) ? 1 : -1)));
+            foreach (Tweet tweet in tweets)
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendFormat("{0}: {1}", status.CreatedAt.ToString("HH:mm"), status.Text);
+                sb.AppendFormat("{0}: {1}", tweet.CreatedAt.ToString("HH:mm"), tweet.Text);
                 if (Console.Config.ShowPermalinkAfterStatus)
-                    sb.AppendFormat(" http://twitter.com/{0}/status/{1}", status.User.ScreenName, status.Id);
+                    sb.AppendFormat(" http://twitter.com/{0}/status/{1}", tweet.User.ScreenName, tweet.Id);
 
-                Console.NotifyMessage(status.User.ScreenName, sb.ToString());
+                Console.NotifyMessage(tweet.User.ScreenName, sb.ToString());
             }
         }
     }

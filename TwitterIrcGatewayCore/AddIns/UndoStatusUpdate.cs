@@ -49,11 +49,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
                                                    try
                                                    {
                                                        Int64 statusId = _lastUpdateStatusList.Last.Value;
-                                                       Status status = CurrentSession.TwitterService.DestroyStatus(statusId);
+                                                       Tweet tweet = CurrentSession.TwitterService.DestroyStatus(statusId);
                                                        CurrentSession.SendServer(new NoticeMessage(e.ReceivedMessage.Receiver,
                                                                                             String.Format(
                                                                                                 "ステータス \"{0}\" ({1}) を削除しました。",
-                                                                                                status.Text, status.Id)));
+                                                                                                tweet.Text, tweet.Id)));
                                                        _lastUpdateStatusList.Remove(statusId);
                                                    }
                                                    catch (TwitterServiceException te)

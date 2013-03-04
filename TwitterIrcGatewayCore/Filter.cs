@@ -213,16 +213,16 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
         public String IRCMessageType;
         public Boolean Drop;
         public Session Session;
-        public Status Status;
+        public Tweet Tweet;
 
-        public FilterArgs(Session session, String content, User user, String ircMessageType, Boolean drop, Status status)
+        public FilterArgs(Session session, String content, User user, String ircMessageType, Boolean drop, Tweet tweet)
         {
             this.Session = session;
             this.Content = content;
             this.User = user;
             this.IRCMessageType = ircMessageType;
             this.Drop = drop;
-            this.Status = status;
+            this.Tweet = tweet;
         }
     }
 
@@ -499,17 +499,21 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Filter
                     using (System.Diagnostics.Process process = System.Diagnostics.Process.Start(psInfo))
                     using (StreamWriter sw = new StreamWriter(process.StandardInput.BaseStream, encOut))
                     {
-                        sw.WriteLine("Url: http://twitter.com/{0}/statuses/{1}", args.Status.User.ScreenName,
-                                     args.Status.Id);
+                        sw.WriteLine("Url: http://twitter.com/{0}/statuses/{1}", args.Tweet.User.ScreenName,
+                                     args.Tweet.Id);
                         WriteFieldsAndProperties(sw, "User", args.User);
-                        WriteFieldsAndProperties(sw, "Status", args.Status);
+                        WriteFieldsAndProperties(sw, "Status", args.Tweet);
                         sw.WriteLine("Filter-Drop: {0}", args.Drop);
                         sw.WriteLine("Filter-IRCMessageType: {0}", args.IRCMessageType);
                         sw.WriteLine();
+                        // TODO: fix
+                        /*
                         if (XmlMode)
-                            Status.Serializer.Serialize(sw, args.Status);
+                            Tweet.Serializer.Serialize(sw, args.Tweet);
                         else
                             sw.WriteLine(args.Content);
+                         */
+                        sw.WriteLine(args.Content);
                         sw.Close();
 
                         String output = process.StandardOutput.ReadToEnd();

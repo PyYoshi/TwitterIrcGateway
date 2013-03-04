@@ -88,15 +88,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// ステータス一覧を取得します。
         /// </summary>
-        public Statuses Statuses { get; private set; }
+        public List<Tweet> Tweets { get; private set; }
         /// <summary>
         /// 初回アクセスかどうかを取得します。
         /// </summary>
         public Boolean IsFirstTime { get; set; }
-        
-        public TimelineStatusesEventArgs(Statuses statuses, Boolean isFirstTime)
+
+        public TimelineStatusesEventArgs(List<Tweet> tweets, Boolean isFirstTime)
         {
-            Statuses = statuses;
+            Tweets = tweets;
             IsFirstTime = isFirstTime;
         }
     }
@@ -109,7 +109,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// 受け取ったステータスを取得します
         /// </summary>
-        public Status Status { get; private set; }
+        public Tweet Tweet { get; private set; }
         /// <summary>
         /// これからクライアントに送ろうとしている本文を取得・設定します
         /// </summary>
@@ -118,13 +118,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// クライアントに送信するIRCメッセージの種類を取得・設定します
         /// </summary>
         public String IRCMessageType { get; set; }
-        
-        public TimelineStatusEventArgs(Status status) : this(status, status.Text, "")
+
+        public TimelineStatusEventArgs(Tweet tweet)
+            : this(tweet, tweet.Text, "")
         {
         }
-        public TimelineStatusEventArgs(Status status, String text, String ircMessageType)
+        public TimelineStatusEventArgs(Tweet tweet, String text, String ircMessageType)
         {
-            Status = status;
+            Tweet = tweet;
             Text = text;
             IRCMessageType = ircMessageType;
         }
@@ -150,7 +151,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// ステータスを更新してその結果のステータスを取得します。更新完了時のイベントでのみ利用できます。
         /// </summary>
-        public Status CreatedStatus { get; set; }
+        public Tweet CreatedStatus { get; set; }
 
         public StatusUpdateEventArgs(String text, Int64 inReplyToStatusId)
         {
@@ -173,7 +174,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// ステータスを取得します
         /// </summary>
-        public Status Status { get; private set; }
+        public Tweet Tweet { get; private set; }
         /// <summary>
         /// メッセージの本文を取得します
         /// </summary>
@@ -182,10 +183,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// 決定された送信先のリストを取得します。このリストに追加または削除することで送信先を変更できます。
         /// </summary>
         public List<RoutedGroup> RoutedGroups { get; private set; }
-        
-        public TimelineStatusRoutedEventArgs(Status status, String text, List<RoutedGroup> routedGroups)
+
+        public TimelineStatusRoutedEventArgs(Tweet tweet, String text, List<RoutedGroup> routedGroups)
         {
-            Status = status;
+            Tweet = tweet;
             Text = text;
             RoutedGroups = routedGroups;
         }
@@ -201,7 +202,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         public Group Group { get; private set; }
 
-        public TimelineStatusGroupEventArgs(Status status, String text, String ircMessageType, Group group) : base(status, text, ircMessageType)
+        public TimelineStatusGroupEventArgs(Tweet tweet, String text, String ircMessageType, Group group)
+            : base(tweet, text, ircMessageType)
         {
             Group = group;
         }
