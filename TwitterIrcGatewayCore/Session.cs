@@ -491,7 +491,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             _twitter.IntervalDirectMessage = _config.IntervalDirectMessage;
             _twitter.IntervalReplies = _config.IntervalReplies;
             _twitter.EnableRepliesCheck = _config.EnableRepliesCheck;
-            _twitter.POSTFetchMode = _config.POSTFetchMode;
             _twitter.FetchCount = _config.FetchCount;
             _twitter.FriendsPerPageThreshold = _config.FriendsPerPageThreshold;
             _twitter.RepliesReceived += new EventHandler<StatusesUpdatedEventArgs>(twitter_RepliesReceived);

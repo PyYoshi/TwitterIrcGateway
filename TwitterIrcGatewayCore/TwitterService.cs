@@ -121,8 +121,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             EnableCompression = false;
             FriendsPerPageThreshold = 100;
             EnableDropProtection = true;
-
-            POSTFetchMode = false;
         }
 
         ~TwitterService()
@@ -156,16 +154,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             get { return _cookieLoginMode; }
             set { _cookieLoginMode = value; }
-        }
-
-        /// <summary>
-        /// POSTを利用してログインしてデータにアクセスします。
-        /// </summary>
-        [Obsolete("POSTによる取得は廃止されました。")]
-        public Boolean POSTFetchMode
-        {
-            get { return false; }
-            set { }
         }
 
         /// <summary>
@@ -273,7 +261,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET("/account/verify_credentials.json", false);
+                String responseBody = GET("/account/verify_credentials.json");
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -410,7 +398,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET(String.Format("/users/show.json?screen_name={0}&include_entities=true", screenName), false);
+                String responseBody = GET(String.Format("/users/show.json?screen_name={0}&include_entities=true", screenName));
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -423,7 +411,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String responseBody = GET(String.Format("/users/show.json?id={0}&include_entities=true", id), false);
+                String responseBody = GET(String.Format("/users/show.json?id={0}&include_entities=true", id));
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -459,7 +447,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Tweet>(() =>
             {
-                String responseBody = GET(String.Format("/statuses/show.json?id={0}&include_entities=true", id), false);
+                String responseBody = GET(String.Format("/statuses/show.json?id={0}&include_entities=true", id));
                 Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
                 return tweet;
             });
@@ -512,7 +500,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<List<DirectMessage>>(() =>
             {
-                String responseBody = GET(String.Format("/direct_messages.json{0}", (sinceId != 0 ? "?since_id=" + sinceId : "")), false);
+                String responseBody = GET(String.Format("/direct_messages.json{0}", (sinceId != 0 ? "?since_id=" + sinceId : "")));
                 List<DirectMessage> directMessages = JsonConvert.DeserializeObject<List<DirectMessage>>(responseBody);
                 return directMessages;
             });
@@ -1143,105 +1131,21 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         }
 
         /// <summary>
-        /// 指定されたURLからデータを取得し文字列として返します。CookieLoginModeが有効なときは自動的にCookieログイン状態で取得します。
+        /// 指定されたURLからデータを取得し文字列として返します。
         /// </summary>
         /// <param name="url">データを取得するURL</param>
         /// <returns></returns>
         public String GET(String url)
         {
-            return GET(url, POSTFetchMode);
-        }
-
-        /// <summary>
-        /// 指定されたURLからデータを取得し文字列として返します。
-        /// </summary>
-        /// <param name="url">データを取得するURL</param>
-        /// <param name="postFetchMode">POSTで取得するかどうか</param>
-        /// <returns></returns>
-        public String GET(String url, Boolean postFetchMode)
-        {
             TraceLogger.Twitter.Information("GET: " + url);
-            if (OAuthClient == null)
-            {
-                return GETWithBasicAuth(url, postFetchMode);
-            }
-            else
-            {
-                return GETWithOAuth(url);
-            }
+            return GETWithOAuth(url);
         }
 
         public String POST(String url, String postData)
         {
             TraceLogger.Twitter.Information("POST: " + url);
-            if (OAuthClient == null)
-            {
-                return POSTWithBasicAuth(url, Encoding.UTF8.GetBytes(postData));
-            }
-            else
-            {
-                return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
-            }
+            return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
         }
-
-
-        #region Basic 認証アクセス
-        private String GETWithBasicAuth(String url, Boolean postFetchMode)
-        {
-            if (postFetchMode)
-            {
-                return POST(url, "");
-            }
-            else
-            {
-                url = ServiceServerPrefix + url;
-                HttpWebRequest webRequest = CreateHttpWebRequest(url, "GET");
-                HttpWebResponse webResponse = webRequest.GetResponse() as HttpWebResponse;
-                using (StreamReader sr = new StreamReader(GetResponseStream(webResponse)))
-                    return sr.ReadToEnd();
-            }
-        }
-
-        private String POSTWithBasicAuth(String url, Byte[] postData)
-        {
-            url = ServiceServerPrefix + url;
-            HttpWebRequest webRequest = CreateHttpWebRequest(url, "POST");
-            using (Stream stream = webRequest.GetRequestStream())
-            {
-                stream.Write(postData, 0, postData.Length);
-            }
-            HttpWebResponse webResponse = webRequest.GetResponse() as HttpWebResponse;
-            using (StreamReader sr = new StreamReader(GetResponseStream(webResponse)))
-                return sr.ReadToEnd();
-        }
-
-        //[Obsolete]
-        protected virtual HttpWebRequest CreateHttpWebRequest(String url, String method)
-        {
-            HttpWebRequest webRequest = HttpWebRequest.Create(url) as HttpWebRequest;
-            //webRequest.Credentials = _credential;
-            //webRequest.PreAuthenticate = true;
-            webRequest.ServicePoint.Expect100Continue = false;
-            webRequest.Proxy = _proxy;
-            webRequest.Method = method;
-            webRequest.Accept = "text/xml, application/xml, text/html;q=0.5";
-            webRequest.UserAgent = String.Format("{0}/{1}", ClientName, ClientVersion);
-            //webRequest.Referer = TwitterService.Referer;
-            webRequest.Headers["X-Twitter-Client"] = ClientName;
-            webRequest.Headers["X-Twitter-Client-Version"] = ClientVersion;
-            webRequest.Headers["X-Twitter-Client-URL"] = ClientUrl;
-
-            if (EnableCompression)
-                webRequest.Headers["Accept-Encoding"] = "gzip";
-
-            Uri uri = new Uri(url);
-
-            NetworkCredential cred = _credential.GetCredential(uri, "Basic");
-            webRequest.Headers["Authorization"] = String.Format("Basic {0}", Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Format("{0}:{1}", cred.UserName, cred.Password))));
-
-            return webRequest as HttpWebRequest;
-        }
-        #endregion
 
         #region OAuth 認証アクセス
         private String GETWithOAuth(String url)
@@ -1265,113 +1169,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 return new GZipStream(webResponse.GetResponseStream(), CompressionMode.Decompress);
             return webResponse.GetResponseStream();
         }
-
-        #region Cookie アクセス
-
-        private CookieCollection _cookies = null;
-        [Obsolete("Cookieによる認証はサポートされません。代わりにGET(POST)を利用してください。")]
-        public String GETWithCookie(String url)
-        {
-            Boolean isRetry = false;
-            url = ServiceServerPrefix + url;
-        Retry:
-            try
-            {
-                TraceLogger.Twitter.Information("GET(Cookie): {0}", url);
-                return DownloadString(url);
-            }
-            catch (WebException we)
-            {
-                HttpWebResponse wResponse = we.Response as HttpWebResponse;
-                if (wResponse == null || wResponse.StatusCode != HttpStatusCode.Unauthorized || isRetry)
-                    throw;
-
-                _cookies = CookieLogin();
-
-                isRetry = true;
-                goto Retry;
-            }
-        }
-
-        [Obsolete("Cookieによる認証はサポートされません。")]
-        public CookieCollection CookieLogin()
-        {
-            TraceLogger.Twitter.Information("Cookie Login: {0}", _userName);
-
-            HttpWebRequest request = CreateWebRequest("https://twitter.com/account/verify_credentials.json") as HttpWebRequest;
-            request.AllowAutoRedirect = false;
-            request.Method = "GET";
-
-            NetworkCredential cred = _credential.GetCredential(new Uri("https://twitter.com/account/verify_credentials.json"), "Basic");
-            request.Headers["Authorization"] = String.Format("Basic {0}", Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Format("{0}:{1}", cred.UserName, cred.Password))));
-
-            HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-            using (StreamReader sr = new StreamReader(GetResponseStream(response), Encoding.UTF8))
-            {
-                String responseBody = sr.ReadToEnd();
-
-                if (response.Cookies.Count == 0)
-                {
-                    throw new ApplicationException("ログインに失敗しました。ユーザ名またはパスワードが間違っている可能性があります。");
-                }
-
-                foreach (Cookie cookie in response.Cookies)
-                {
-                    cookie.Domain = "twitter.com";
-                }
-
-                _cookies = response.Cookies;
-
-                return response.Cookies;
-            }
-        }
-
-        [Obsolete("Cookieによる認証はサポートされません。")]
-        WebRequest CreateWebRequest(String uri)
-        {
-            WebRequest request = WebRequest.Create(uri);
-            if (request is HttpWebRequest)
-            {
-                HttpWebRequest httpRequest = request as HttpWebRequest;
-                httpRequest.UserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)";
-                httpRequest.Referer = Referer;
-                httpRequest.PreAuthenticate = false;
-                httpRequest.Accept = "*/*";
-                httpRequest.CookieContainer = new CookieContainer();
-                httpRequest.Proxy = _proxy;
-
-                if (EnableCompression)
-                    httpRequest.Headers["Accept-Encoding"] = "gzip";
-
-                if (_cookies != null)
-                {
-                    httpRequest.CookieContainer.Add(_cookies);
-                }
-            }
-            return request;
-        }
-
-        String DownloadString(String url)
-        {
-            WebRequest request = CreateWebRequest(url);
-            WebResponse response = null;
-            try
-            {
-                response = request.GetResponse();
-                using (StreamReader sr = new StreamReader(GetResponseStream(response)))
-                {
-                    return sr.ReadToEnd();
-                }
-            }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
-        }
-        #endregion
     }
 
     /// <summary>
