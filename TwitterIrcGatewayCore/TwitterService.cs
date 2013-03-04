@@ -352,10 +352,40 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             List<User> users = new List<User>();
             return ExecuteRequest<List<User>>(() =>
             {
-                String userIdsStr = string.Join(",", userIds.Select(n => n.ToString()).ToArray());
-                String postData = String.Format("user_id={0}", userIdsStr);
-                String responseBody = POST("/users/lookup.json", postData);
-                users = JsonConvert.DeserializeObject<List<User>>(responseBody);
+                String[] userIdsArray = userIds.Select(n => n.ToString()).ToArray();
+                String userIdsStr;
+                String responseBody;
+                // 最大100までしか取得できないのでそれようの処理
+                if (userIdsArray.Length > 100)
+                {
+                    var odd = (userIdsArray.Length % 100);
+                    var times = (userIdsArray.Length - odd) / 100;
+                    if (odd != 0) times += 1;
+                    List<List<User>> results = new List<List<User>>();
+                    for (var i = 0; i < times; i++)
+                    {
+                        if (i == 0)
+                        {
+                            userIdsStr = string.Join(",", userIdsArray.Take(100).ToArray());
+                        }
+                        else if(i == times - 1)
+                        {
+                            userIdsStr = string.Join(",", userIdsArray.Skip(100 * i).Take(odd).ToArray());
+                        }
+                        else
+                        {
+                            userIdsStr = string.Join(",", userIdsArray.Skip(100 * i).Take(100).ToArray());
+                        }
+                        responseBody = GET(String.Format("/users/lookup.json?user_id={0}", userIdsStr));
+                        users.Concat(JsonConvert.DeserializeObject<List<User>>(responseBody));
+                    }
+                }
+                else
+                {
+                    userIdsStr = string.Join(",", userIdsArray);
+                    responseBody = GET(String.Format("/users/lookup.json?user_id={0}", userIdsStr));
+                    users = JsonConvert.DeserializeObject<List<User>>(responseBody);
+                }
                 return users;
             });
         }
