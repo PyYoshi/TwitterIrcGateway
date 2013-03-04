@@ -363,7 +363,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             List<User> users = new List<User>();
             return ExecuteRequest<List<User>>(() =>
             {
-                String userIdsStr = JsonConvert.SerializeObject(userIds);
+                String userIdsStr = string.Join(",", userIds.Select(n => n.ToString()).ToArray());
                 String postData = String.Format("user_id={0}", userIdsStr);
                 String responseBody = POST("/users/lookup.json", postData);
                 users = JsonConvert.DeserializeObject<List<User>>(responseBody);
