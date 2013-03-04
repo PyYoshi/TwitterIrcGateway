@@ -973,7 +973,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             catch (InvalidOperationException ioe)
             {
-                // XmlSerializer
                 throw new TwitterServiceException(ioe);
             }
             catch (JsonException je)
@@ -998,7 +997,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             catch (InvalidOperationException ioe)
             {
-                // XmlSerializer
                 throw new TwitterServiceException(ioe);
             }
             catch (JsonException je)
@@ -1367,9 +1365,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     {
         // https://dev.twitter.com/docs/platform-objects/tweets
         [JsonProperty("contributors", NullValueHandling = NullValueHandling.Ignore)]
-        public List<Contributor> Contributors { get; set; }
+        public Object Contributors { get; set; }
         [JsonProperty("coordinates", NullValueHandling = NullValueHandling.Ignore)]
-        public List<Coordinate> Coordinates { get; set; }
+        public Object Coordinates { get; set; }
         [JsonProperty("created_at", NullValueHandling = NullValueHandling.Ignore)]
         public string _createdAt { get; set; }
         [JsonIgnore]
