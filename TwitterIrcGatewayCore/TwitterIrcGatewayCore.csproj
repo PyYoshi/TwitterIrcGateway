@@ -15,7 +15,7 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -31,6 +31,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -149,37 +150,39 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="IronPython, Version=2.6.0.1, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="IronPython, Version=2.6.10920.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\IronPython.dll</HintPath>
+      <HintPath>AddIns\DLRIntegration\DLLs\IronPython.dll</HintPath>
     </Reference>
-    <Reference Include="IronPython.Modules, Version=2.6.0.1, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="IronPython.Modules, Version=2.6.10920.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\IronPython.Modules.dll</HintPath>
+      <HintPath>AddIns\DLRIntegration\DLLs\IronPython.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="IronRuby, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="IronRuby, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\IronRuby.dll</HintPath>
+      <HintPath>AddIns\DLRIntegration\DLLs\IronRuby.dll</HintPath>
     </Reference>
-    <Reference Include="IronRuby.Libraries, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="IronRuby.Libraries, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\IronRuby.Libraries.dll</HintPath>
+      <HintPath>AddIns\DLRIntegration\DLLs\IronRuby.Libraries.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Dynamic, Version=0.9.5.1, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\Microsoft.Dynamic.dll</HintPath>
+    <Reference Include="IronRuby.Libraries.Yaml">
+      <HintPath>AddIns\DLRIntegration\DLLs\IronRuby.Libraries.Yaml.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Scripting, Version=0.9.5.1, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Dynamic, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\Microsoft.Scripting.dll</HintPath>
+      <HintPath>AddIns\DLRIntegration\DLLs\Microsoft.Dynamic.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Scripting.Core, Version=0.9.5.1, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Scripting, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\Microsoft.Scripting.Core.dll</HintPath>
+      <HintPath>AddIns\DLRIntegration\DLLs\Microsoft.Scripting.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Scripting.ExtensionAttribute, Version=0.9.5.1, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.Scripting.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>AddIns\DLRIntegration\Microsoft.Scripting.ExtensionAttribute.dll</HintPath>
+      <HintPath>AddIns\DLRIntegration\DLLs\Microsoft.Scripting.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Scripting.Metadata">
+      <HintPath>AddIns\DLRIntegration\DLLs\Microsoft.Scripting.Metadata.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.4.5.11\lib\net35\Newtonsoft.Json.dll</HintPath>
@@ -189,7 +192,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AddInManager.cs" />
@@ -259,8 +262,6 @@
     <Compile Include="_Counter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AddIns\DLRIntegration\Samples\attach_event.py" />
-    <None Include="AddIns\DLRIntegration\Samples\notify_delay.rb" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -280,6 +281,7 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -289,7 +291,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>robocopy "$(ProjectDir)AddIns\DLRIntegration\Libraries" "$(ProjectDir)$(OutDir)Libraries" /e /xd .svn /xo &gt; nul
+    <PostBuildEvent>robocopy "$(ProjectDir)AddIns\DLRIntegration\Lib" "$(ProjectDir)$(OutDir)Lib" /e /xd .svn /xo &gt; nul
 exit 0</PostBuildEvent>
   </PropertyGroup>
 </Project>
