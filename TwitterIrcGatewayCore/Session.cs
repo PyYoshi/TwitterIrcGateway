@@ -474,17 +474,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             SendTwitterGatewayServerMessage("* 設定を読み込んでいます...");
             LoadSettings();
             
-            //
-            // Twitte Service Setup
-            //
-            if (((Connection)Connections[0]).Identity != null)
-            {
-                _twitter = new TwitterService(_server.OAuthClientKey, _server.OAuthSecretKey, ((Connection)Connections[0]).Identity);
-            }
-            else
-            {
-                _twitter = new TwitterService(Connections[0].UserInfo.UserName, Connections[0].UserInfo.Password);
-            }
+            _twitter = new TwitterService(_server.OAuthClientKey, _server.OAuthSecretKey, ((Connection)Connections[0]).Identity);
             _twitter.EnableCompression = Config.Default.EnableCompression; // TODO: なんとかする
             _twitter.BufferSize = _config.BufferSize;
             _twitter.Interval = _config.Interval;
