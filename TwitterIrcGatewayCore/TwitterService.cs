@@ -21,7 +21,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         private CredentialCache _credential = new CredentialCache();
         private IWebProxy _proxy = WebRequest.DefaultWebProxy;
         private String _userName;
-        private Boolean _cookieLoginMode = false;
 
         private Timer _timer;
         private Timer _timerDirectMessage;
@@ -144,16 +143,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 _proxy = value;
                 //_webClient.Proxy = value;
             }
-        }
-
-        /// <summary>
-        /// Cookieを利用してログインしてデータにアクセスします。
-        /// </summary>
-        [Obsolete("Cookieログインによるデータ取得は制限されました。POSTFetchModeを利用してください。")]
-        public Boolean CookieLoginMode
-        {
-            get { return _cookieLoginMode; }
-            set { _cookieLoginMode = value; }
         }
 
         /// <summary>
