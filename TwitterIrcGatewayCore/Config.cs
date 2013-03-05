@@ -54,7 +54,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// チェックする間隔を指定します。
         /// </summary>
         [Description("チェックする間隔を指定します。")]
-        public Int32 Interval { get { return _interval; } set { _interval = Math.Min(60, value); } }
+        public Int32 Interval { get; set; }
         /// <summary>
         /// ダイレクトメッセージをチェックする間隔を指定します。
         /// </summary>
