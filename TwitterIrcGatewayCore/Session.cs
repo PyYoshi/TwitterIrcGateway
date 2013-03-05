@@ -1192,7 +1192,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
             
             Boolean friendsCheckRequired = e.FriendsCheckRequired;
-            foreach (Tweet tweet in e.Tweets)
+            foreach (Tweet tweet in e.Tweets.Tweet)
             {
                 ProcessTimelineStatus(tweet, ref friendsCheckRequired);
             }
@@ -1211,7 +1211,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         void twitter_RepliesReceived(object sender, StatusesUpdatedEventArgs e)
         {
             Boolean dummy = false;
-            foreach (Tweet tweet in e.Tweets)
+            foreach (Tweet tweet in e.Tweets.Tweet)
             {
                 ProcessTimelineStatus(tweet, ref dummy, false, e.IsFirstTime);
             }
@@ -1422,7 +1422,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             RunCheck(delegate
             {
-                List<User> friends = _twitter.GetFriends();
+                User[] friends = _twitter.GetFriends();
                 _followingUsers = new HashSet<User>();
                 // 保持していてもしょうがないので消す
                 foreach (var friend in friends)
@@ -1470,7 +1470,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             RunCheck(delegate
             {
-                List<User> friends = _twitter.GetFriends();
+                User[] friends = _twitter.GetFriends();
 
                 // てきとうに。
                 // 増えた分

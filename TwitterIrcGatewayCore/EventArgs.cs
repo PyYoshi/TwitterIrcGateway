@@ -88,13 +88,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// ステータス一覧を取得します。
         /// </summary>
-        public List<Tweet> Tweets { get; private set; }
+        public Tweets Tweets { get; private set; }
         /// <summary>
         /// 初回アクセスかどうかを取得します。
         /// </summary>
         public Boolean IsFirstTime { get; set; }
 
-        public TimelineStatusesEventArgs(List<Tweet> tweets, Boolean isFirstTime)
+        public TimelineStatusesEventArgs(Tweets tweets, Boolean isFirstTime)
         {
             Tweets = tweets;
             IsFirstTime = isFirstTime;

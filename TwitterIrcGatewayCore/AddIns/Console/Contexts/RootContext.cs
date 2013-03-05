@@ -80,8 +80,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
             {
                 try
                 {
-                    List<Tweet> retTweets = CurrentSession.TwitterService.GetTimelineByScreenName(screenName, 0, Console.Config.SearchCount);
-                    tweets.AddRange(retTweets);
+                    Tweets retTweets = CurrentSession.TwitterService.GetTimelineByScreenName(screenName, 0, Console.Config.SearchCount);
+                    tweets.AddRange(retTweets.Tweet);
                 }
                 catch (TwitterServiceException te)
                 {
@@ -106,8 +106,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns.Console
             {
                 try
                 {
-                    List<Tweet> retTweets = CurrentSession.TwitterService.GetTimelineByScreenName(screenName, 0, Console.Config.SearchCount);
-                    tweets.AddRange(retTweets);
+                    Tweets retTweets = CurrentSession.TwitterService.GetTimelineByScreenName(screenName, 0, Console.Config.SearchCount);
+                    tweets.AddRange(retTweets.Tweet);
                     if (tweets.Count > Console.Config.FavoritesCount)
                         tweets.RemoveRange(10, tweets.Count - 10);
                 }

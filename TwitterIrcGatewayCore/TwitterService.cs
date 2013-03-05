@@ -347,10 +347,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// usersを取得します。
         /// </summary>
-        public List<User> GetUsers(List<long> userIds)
+        public User[] GetUsers(List<long> userIds)
         {
             List<User> users = new List<User>();
-            return ExecuteRequest<List<User>>(() =>
+            return ExecuteRequest<User[]>(() =>
             {
                 String[] userIdsArray = userIds.Select(n => n.ToString()).ToArray();
                 String userIdsStr;
@@ -376,24 +376,24 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                         {
                             userIdsStr = string.Join(",", userIdsArray.Skip(100 * i).Take(100).ToArray());
                         }
-                        responseBody = GET(String.Format("/users/lookup.json?user_id={0}", userIdsStr));
+                        responseBody = GET(String.Format("/users/lookup.json?user_id={0}", System.Uri.EscapeDataString(userIdsStr)));
                         users.Concat(JsonConvert.DeserializeObject<List<User>>(responseBody));
                     }
                 }
                 else
                 {
                     userIdsStr = string.Join(",", userIdsArray);
-                    responseBody = GET(String.Format("/users/lookup.json?user_id={0}", userIdsStr));
+                    responseBody = GET(String.Format("/users/lookup.json?user_id={0}", System.Uri.EscapeDataString(userIdsStr)));
                     users = JsonConvert.DeserializeObject<List<User>>(responseBody);
                 }
-                return users;
+                return users.ToArray();
             });
         }
 
         /// <summary>
         /// friendsを取得します。
         /// </summary>
-        public List<User> GetFriends()
+        public User[] GetFriends()
         {
             List<User> users = new List<User>();
             UserIds userIds = GetFriendIds();
@@ -403,7 +403,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// followersを取得します。
         /// </summary>
-        public List<User> GetFollowers()
+        public User[] GetFollowers()
         {
             List<User> users = new List<User>();
             UserIds userIds = GetFollowerIds();
@@ -439,7 +439,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// timeline を取得します。
         /// </summary>
-        public List<Tweet> GetTimeline(Int64 sinceId)
+        public Tweets GetTimeline(Int64 sinceId)
         {
             return GetTimeline(sinceId, FetchCount);
         }
@@ -447,12 +447,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// timeline を取得します。
         /// </summary>
-        public List<Tweet> GetTimeline(Int64 sinceId, Int32 count)
+        public Tweets GetTimeline(Int64 sinceId, Int32 count)
         {
-            return ExecuteRequest<List<Tweet>>(() =>
+            Tweets tweets = new Tweets();
+            return ExecuteRequest<Tweets>(() =>
             {
                 String responseBody = GET(String.Format("/statuses/home_timeline.json?since_id={0}&count={1}&include_entities=true", sinceId, count));
-                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                tweets.Tweet = JsonConvert.DeserializeObject<List<Tweet>>(responseBody).ToArray();
                 return tweets;
             });
         }
@@ -476,7 +477,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// replies を取得します。
         /// </summary>
         [Obsolete]
-        public List<Tweet> GetReplies()
+        public Tweets GetReplies()
         {
             return GetMentions();
         }
@@ -484,7 +485,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// mentions を取得します。
         /// </summary>
-        public List<Tweet> GetMentions()
+        public Tweets GetMentions()
         {
             return GetMentions(1);
         }
@@ -492,12 +493,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// mentions を取得します。
         /// </summary>
-        public List<Tweet> GetMentions(Int64 sinceId)
+        public Tweets GetMentions(Int64 sinceId)
         {
-            return ExecuteRequest<List<Tweet>>(() =>
+            Tweets tweets = new Tweets();
+            return ExecuteRequest<Tweets>(() =>
             {
                 String responseBody = GET(String.Format("/statuses/mentions_timeline.json?since_id={0}&include_entities=true", sinceId));
-                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                tweets.Tweet = JsonConvert.DeserializeObject<List<Tweet>>(responseBody).ToArray();
                 return tweets;
             });
         }
@@ -507,7 +509,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// </summary>
         /// <exception cref="WebException"></exception>
         /// <exception cref="TwitterServiceException"></exception>
-        public List<DirectMessage> GetDirectMessages()
+        public DirectMessages GetDirectMessages()
         {
             return GetDirectMessages(0);
         }
@@ -515,12 +517,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// direct messages を取得します。
         /// </summary>
-        public List<DirectMessage> GetDirectMessages(Int64 sinceId)
+        public DirectMessages GetDirectMessages(Int64 sinceId)
         {
-            return ExecuteRequest<List<DirectMessage>>(() =>
+            DirectMessages directMessages = new DirectMessages();
+            return ExecuteRequest<DirectMessages>(() =>
             {
                 String responseBody = GET(String.Format("/direct_messages.json{0}", (sinceId != 0 ? "?since_id=" + sinceId : "")));
-                List<DirectMessage> directMessages = JsonConvert.DeserializeObject<List<DirectMessage>>(responseBody);
+                directMessages.DirectMessage = JsonConvert.DeserializeObject<List<DirectMessage>>(responseBody).ToArray();
                 return directMessages;
             });
         }
@@ -528,12 +531,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// user timeline を取得します。
         /// </summary>
-        public List<Tweet> GetTimelineByScreenName(String screenName,Int64 sinceId, Int32 count)
+        public Tweets GetTimelineByScreenName(String screenName, Int64 sinceId, Int32 count)
         {
-            return ExecuteRequest<List<Tweet>>(() =>
+            Tweets tweets = new Tweets();
+            return ExecuteRequest<Tweets>(() =>
             {
                 String responseBody = GET(String.Format("/statuses/user_timeline.json?screen_name={0}{1}{2}", screenName, (sinceId != 0) ? "&since_id=" + sinceId : "", (count > 0 ? "&count="+ count : "")));
-                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                tweets.Tweet = JsonConvert.DeserializeObject<List<Tweet>>(responseBody).ToArray();
                 return tweets;
             });
         }
@@ -541,12 +545,13 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// 指定したユーザの favorites を取得します。
         /// </summary>
-        public List<Tweet> GetFavoritesByScreenName(String screenName, Int64 sinceId)
+        public Tweets GetFavoritesByScreenName(String screenName, Int64 sinceId)
         {
-            return ExecuteRequest<List<Tweet>>(() =>
+            Tweets tweets = new Tweets();
+            return ExecuteRequest<Tweets>(() =>
             {
                 String responseBody = GET(String.Format("/favorites/list.json?screen_name={0}{1}", screenName, (sinceId != 0 ? "&since_id=" + sinceId :"")));
-                List<Tweet> tweets = JsonConvert.DeserializeObject<List<Tweet>>(responseBody);
+                tweets.Tweet = JsonConvert.DeserializeObject<List<Tweet>>(responseBody).ToArray();
                 return tweets;
             });
         }
@@ -796,11 +801,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// ステータスがすでに流されたかどうかをチェックして、流されていない場合に指定されたアクションを実行します。
         /// </summary>
-        public void ProcessTweets(List<Tweet> tweets, Action<List<Tweet>> action)
+        public void ProcessTweets(Tweets tweets, Action<Tweets> action)
         {
-            List<Tweet> tmpTweets = new List<Tweet>();
+            Tweets tmpTweets = new Tweets();
             List<Tweet> tweetList = new List<Tweet>();
-            foreach (Tweet tweet in tweets)
+            foreach (Tweet tweet in tweets.Tweet)
             {
                 ProcessTweet(tweet, s =>
                 {
@@ -811,17 +816,17 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             if (tweetList.Count == 0)
                 return;
-            tmpTweets = tweetList;
+            tmpTweets.Tweet = tweetList.ToArray();
             action(tmpTweets);
         }
         /// <summary>
         /// Repliesステータスがすでに流されたかどうかをチェックして、流されていない場合に指定されたアクションを実行します。
         /// </summary>
-        public void ProcessRepliesTweet(List<Tweet> tweets, Action<List<Tweet>> action)
+        public void ProcessRepliesTweet(Tweets tweets, Action<Tweets> action)
         {
-            List<Tweet> tmpTweets = new List<Tweet>();
+            Tweets tmpTweets = new Tweets();
             List<Tweet> tweetList = new List<Tweet>();
-            foreach (Tweet tweet in tweets)
+            foreach (Tweet tweet in tweets.Tweet)
             {
                 ProcessTweet(tweet, s =>
                 {
@@ -829,7 +834,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     UpdateLastAccessTweetId(tweet, ref _lastAccessTimelineId);
                 });
             }
-            foreach (Tweet tweet in tweets.Where(s => s.Id > _lastAccessRepliesId))
+            foreach (Tweet tweet in tweets.Tweet.Where(s => s.Id > _lastAccessRepliesId))
             {
                 if (ProcessDropProtection(_repliesBuffer, tweet.Id) && ProcessDropProtection(_statusBuffer, tweet.Id))
                 {
@@ -841,7 +846,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
             if (tweetList.Count == 0)
                 return;
-            tmpTweets = tweetList;
+            tmpTweets.Tweet = tweetList.ToArray();
             action(tmpTweets);
         }
 
@@ -850,9 +855,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             Boolean friendsCheckRequired = false;
             RunCheck(delegate
             {
-                List<Tweet> tweets = GetTimeline(_lastAccessTimelineId);
-                //Array.Reverse(tweets.Status);
-                tweets.Reverse();
+                Tweets tweets = GetTimeline(_lastAccessTimelineId);
+                Array.Reverse(tweets.Tweet);
                 // 差分チェック
                 ProcessTweets(tweets, (s) =>
                 {
@@ -861,8 +865,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
                 if (_isFirstTime || !EnableDropProtection)
                 {
-                    if (tweets != null && tweets.Count > 0)
-                        _lastAccessTimelineId = tweets.Select(s => s.Id).Max();
+                    if (tweets != null && tweets.Tweet.Length > 0)
+                        _lastAccessTimelineId = tweets.Tweet.Select(s => s.Id).Max();
                 }
                 _isFirstTime = false;
             });
@@ -872,9 +876,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             RunCheck(delegate
             {
-                List<DirectMessage> directMessages = (_lastAccessDirectMessageId == 0) ? GetDirectMessages() : GetDirectMessages(_lastAccessDirectMessageId);
-                directMessages.Reverse();
-                foreach (DirectMessage message in directMessages)
+                DirectMessages directMessages = (_lastAccessDirectMessageId == 0) ? GetDirectMessages() : GetDirectMessages(_lastAccessDirectMessageId);
+                Array.Reverse(directMessages.DirectMessage);
+                foreach (DirectMessage message in directMessages.DirectMessage)
                 {
                     // チェック
                     if (message == null || String.IsNullOrEmpty(message.Sender.ScreenName))
@@ -900,8 +904,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             Boolean friendsCheckRequired = false;
             RunCheck(delegate
             {
-                List<Tweet> tweets = GetMentions(_lastAccessRepliesId);
-                tweets.Reverse();
+                Tweets tweets = GetMentions(_lastAccessRepliesId);
+                Array.Reverse(tweets.Tweet);
 
                 // 差分チェック
                 ProcessRepliesTweet(tweets, (s) =>
@@ -914,8 +918,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
                 if (_isFirstTimeReplies || !EnableDropProtection)
                 {
-                    if (tweets != null && tweets.Count > 0)
-                        _lastAccessRepliesId = tweets.Select(s => s.Id).Max();
+                    if (tweets != null && tweets.Tweet.Length > 0)
+                        _lastAccessRepliesId = tweets.Tweet.Select(s => s.Id).Max();
                 }
                 _isFirstTimeReplies = false;
             });
@@ -1205,14 +1209,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     /// </summary>
     public class StatusesUpdatedEventArgs : EventArgs
     {
-        public List<Tweet> Tweets { get; set; }
+        public Tweets Tweets { get; set; }
         public Boolean IsFirstTime { get; set; }
         public Boolean FriendsCheckRequired { get; set; }
-        public StatusesUpdatedEventArgs(List<Tweet> tweets)
+        public StatusesUpdatedEventArgs(Tweets tweets)
         {
             this.Tweets = tweets;
         }
-        public StatusesUpdatedEventArgs(List<Tweet> tweets, Boolean isFirstTime, Boolean friendsCheckRequired)
+        public StatusesUpdatedEventArgs(Tweets tweets, Boolean isFirstTime, Boolean friendsCheckRequired)
             : this(tweets)
         {
             this.IsFirstTime = isFirstTime;
@@ -1355,6 +1359,15 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public string WithheldInCountries { get; set; }
         [JsonProperty("withheld_scope", NullValueHandling = NullValueHandling.Ignore)]
         public string WithheldScope { get; set; }
+
+        public User()
+        {
+            _Counter.Increment(ref _Counter.User);
+        }
+        ~User()
+        {
+            _Counter.Decrement(ref _Counter.User);
+        }
     }
 
     /// <summary>
@@ -1471,6 +1484,28 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public string WithheldScope { get; set; }
         [JsonProperty("retweeted_status", NullValueHandling = NullValueHandling.Ignore)]
         public Tweet RetweetedStatus { get; set; }
+
+        public Tweet()
+        {
+            _Counter.Increment(ref _Counter.Status);
+        }
+        ~Tweet()
+        {
+        _Counter.Decrement(ref _Counter.Status);
+        }
+    }
+
+    public class Tweets
+    {
+        public Tweet[] Tweet;
+        public Tweets()
+        {
+            _Counter.Increment(ref _Counter.Statuses);
+        }
+        ~Tweets()
+        {
+        _Counter.Decrement(ref _Counter.Statuses);
+        }
     }
 
     /// <summary>
@@ -1689,5 +1724,19 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public string SenderScreeenName { get; set; }
         [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
         public string Text { get; set; }
+    }
+
+    public class DirectMessages
+    {
+        public DirectMessage[] DirectMessage;
+
+        public DirectMessages()
+        {
+            _Counter.Increment(ref _Counter.DirectMessages);
+        }
+        ~DirectMessages()
+        {
+            _Counter.Decrement(ref _Counter.DirectMessages);
+        }
     }
 }
