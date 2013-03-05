@@ -81,14 +81,14 @@ namespace Misuzilla.Applications.TwitterIrcGateway.AddIns
             if (Session.TwitterUser == null)
                 return false;
 
-            Int64 cursor = 0;
-            var page = 0;
+            Int64 cursor = -1;
+            var page = 10;
             return Session.RunCheck(() =>
                                  {
                                     var followerIds = new List<Int32>();
                                     while (cursor != 0 && page > 0)
                                     {
-                                        String responseBody = Session.TwitterService.GETv1_1("/followers/ids/" + Session.TwitterUser.Id + ".json", "/followers/ids");
+                                        String responseBody = Session.TwitterService.GETv1_1("/followers/ids.json", "/followers/ids");
                                         var idsJson = JsonConvert.DeserializeObject<FollowersIds>(responseBody);
                                         if (idsJson == null)
                                             break;
