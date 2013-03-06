@@ -26,11 +26,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         public Connection(Server server, TcpClient tcpClient) : base(server, tcpClient)
         {
-            _Counter.Increment(ref _Counter.Connection);
-        }
-        ~Connection()
-        {
-            _Counter.Decrement(ref _Counter.Connection);
         }
 
         protected override AuthenticateResult OnAuthenticate(UserInfo userInfo)
