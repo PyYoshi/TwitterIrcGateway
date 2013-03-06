@@ -103,8 +103,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                 ServicePointManager.ServerCertificateValidationCallback += delegate { return true; };
 
             // OAuth Default Tokens (TweetIrcGateway)
-            OAuthClientKey = "9gGt51Xp3AB8C7wU2Tw";
-            OAuthSecretKey = "74K9CwKANFVLVupHMtHy4fJ3TjAJq58CvxxtAQjoI";
+            OAuthClientKey = "boXn3dBzHAWeGkDOB1pAZw";
+            OAuthSecretKey = "G3dMt5SFoHlG70Mt4vmDMcsJ7kLMO4Ge3BJoW2nYvA";
 
             ServicePointManager.DefaultConnectionLimit = 1000;
             Authentication = new OAuthAuthentication();
