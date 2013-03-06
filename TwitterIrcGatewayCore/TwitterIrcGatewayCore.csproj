@@ -150,6 +150,15 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DotNetOpenAuth.Core, Version=4.2.0.0, Culture=neutral, PublicKeyToken=2780ccd10d57b246, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetOpenAuth.Core.4.2.2.13055\lib\net40-full\DotNetOpenAuth.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="DotNetOpenAuth.OAuth, Version=4.2.0.0, Culture=neutral, PublicKeyToken=2780ccd10d57b246, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetOpenAuth.OAuth.Core.4.2.2.13055\lib\net40-full\DotNetOpenAuth.OAuth.dll</HintPath>
+    </Reference>
+    <Reference Include="DotNetOpenAuth.OAuth.Consumer, Version=4.2.0.0, Culture=neutral, PublicKeyToken=2780ccd10d57b246, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetOpenAuth.OAuth.Consumer.4.2.2.13055\lib\net40-full\DotNetOpenAuth.OAuth.Consumer.dll</HintPath>
+    </Reference>
     <Reference Include="IronPython, Version=2.6.10920.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>AddIns\DLRIntegration\DLLs\IronPython.dll</HintPath>
@@ -188,10 +197,23 @@
       <HintPath>..\packages\Newtonsoft.Json.4.5.11\lib\net35\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http, Version=2.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Net.Http.2.1.3-beta\lib\net40\System.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Extensions, Version=2.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Net.Http.2.1.3-beta\lib\net40\System.Net.Http.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Primitives, Version=2.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Net.Http.2.1.3-beta\lib\net40\System.Net.Http.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.WebRequest, Version=2.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Net.Http.2.1.3-beta\lib\net40\System.Net.Http.WebRequest.dll</HintPath>
+    </Reference>
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
@@ -224,18 +246,16 @@
     <Compile Include="AuthenticateResult.cs" />
     <Compile Include="Authentication\ApiAuthentication.cs" />
     <Compile Include="Authentication\IAuthentication.cs" />
-    <Compile Include="Authentication\XAuthAuthentication.cs" />
     <Compile Include="Authentication\OAuthAuthentication.cs" />
     <Compile Include="Connection.cs" />
     <Compile Include="ConnectionBase.cs" />
     <Compile Include="Deferred.cs" />
     <Compile Include="IIrcMessageSendable.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="OAuth\OAuthBase.cs" />
+    <Compile Include="OAuth\InMemoryTokenManager.cs" />
     <Compile Include="OAuth\OAuthSettingSession.cs" />
     <Compile Include="OAuth\TwitterOAuth.cs" />
     <Compile Include="SessionBase.cs" />
-    <Compile Include="SessionIM.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="EventArgs.cs" />
     <Compile Include="EventManagedProxy.cs" />
@@ -253,15 +273,14 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Session.cs" />
-    <Compile Include="TwitterIMService.cs" />
     <Compile Include="TwitterService.cs" />
     <Compile Include="AddIns\TypableMap\TypableMap.cs" />
     <Compile Include="AddIns\TypableMap\TypableMapCommandProcessor.cs" />
     <Compile Include="UserInfo.cs" />
     <Compile Include="Utility.cs" />
-    <Compile Include="_Counter.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -294,4 +313,5 @@
     <PostBuildEvent>robocopy "$(ProjectDir)AddIns\DLRIntegration\Lib" "$(ProjectDir)$(OutDir)Lib" /e /xd .svn /xo &gt; nul
 exit 0</PostBuildEvent>
   </PropertyGroup>
+  <Import Project="..\packages\Microsoft.Bcl.Build.1.0.0-rc\tools\Microsoft.Bcl.Build.targets" />
 </Project>

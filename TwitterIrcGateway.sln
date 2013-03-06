@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtraAddIns", "ExtraAddIns", "{8556500F-82A4-4F3B-9559-F68744C12840}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitterIrcGateway", "TwitterIrcGateway\TwitterIrcGateway.csproj", "{1D1391F6-74ED-4FDF-8C27-0BD421D0FF4D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitterIrcGatewayCLI", "TwitterIrcGatewayCLI\TwitterIrcGatewayCLI.csproj", "{4FCEDBD3-FA87-4ADE-82E9-B3C5BA431F54}"
@@ -10,8 +8,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitterIrcGatewayCore", "TwitterIrcGatewayCore\TwitterIrcGatewayCore.csproj", "{8A256703-BDC7-4E96-8AC3-89A56A2AFB86}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitterIrcGatewayCLIBootstrap", "TwitterIrcGatewayCLIBootstrap\TwitterIrcGatewayCLIBootstrap.csproj", "{14BB28EE-ED27-4F95-A298-59B6B919D3A1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypableMapCommandRemoveAndBlock", "ExtraAddIns\TypableMapCommandRemoveAndBlock\TypableMapCommandRemoveAndBlock.csproj", "{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TwitterIrcGatewayService", "TwitterIrcGatewayService\TwitterIrcGatewayService.csproj", "{BD0A16C9-F297-4A1C-A08D-BBC18D354553}"
 EndProject
@@ -83,21 +79,6 @@ Global
 		{14BB28EE-ED27-4F95-A298-59B6B919D3A1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{14BB28EE-ED27-4F95-A298-59B6B919D3A1}.Release|x86.ActiveCfg = Release|x86
 		{14BB28EE-ED27-4F95-A298-59B6B919D3A1}.Release|x86.Build.0 = Release|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Debug|x86.ActiveCfg = Debug|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Debug|x86.Build.0 = Debug|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Debug|Any CPU.ActiveCfg = Hosting Debug|Any CPU
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Debug|Any CPU.Build.0 = Hosting Debug|Any CPU
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Debug|x86.ActiveCfg = Hosting Debug|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Debug|x86.Build.0 = Hosting Debug|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Release|Any CPU.ActiveCfg = Hosting Release|Any CPU
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Release|Any CPU.Build.0 = Hosting Release|Any CPU
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Release|x86.ActiveCfg = Hosting Release|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Hosting Release|x86.Build.0 = Hosting Release|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Release|x86.ActiveCfg = Release|x86
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A}.Release|x86.Build.0 = Release|x86
 		{BD0A16C9-F297-4A1C-A08D-BBC18D354553}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BD0A16C9-F297-4A1C-A08D-BBC18D354553}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD0A16C9-F297-4A1C-A08D-BBC18D354553}.Debug|x86.ActiveCfg = Debug|x86
@@ -116,8 +97,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{115D5E5F-D93C-4E92-BFF0-BF06DEDEB35A} = {8556500F-82A4-4F3B-9559-F68744C12840}
 	EndGlobalSection
 EndGlobal
