@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
+using DotNetOpenAuth.Messaging;
 
 namespace Misuzilla.Applications.TwitterIrcGateway
 {
@@ -93,11 +94,8 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <param name="twitterIdentity"></param>
         public TwitterService(String clientKey, String secretKey, TwitterIdentity twitterIdentity)
         {
-            OAuthClient = new TwitterOAuth(clientKey, secretKey)
-                          {
-                              Token = twitterIdentity.Token,
-                              TokenSecret = twitterIdentity.TokenSecret
-                          };
+            OAuthClient = new TwitterOAuth(clientKey, secretKey);
+            TWIdentity = twitterIdentity;
             _userName = twitterIdentity.ScreenName;
 
             Initialize();
@@ -105,7 +103,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         private void Initialize()
         {
-            _Counter.Increment(ref _Counter.TwitterService);
             _timer = new Timer(new TimerCallback(OnTimerCallback), null, Timeout.Infinite, Timeout.Infinite);
             _timerDirectMessage = new Timer(new TimerCallback(OnTimerCallbackDirectMessage), null, Timeout.Infinite, Timeout.Infinite);
             _timerReplies = new Timer(new TimerCallback(OnTimerCallbackReplies), null, Timeout.Infinite, Timeout.Infinite);
@@ -124,7 +121,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         ~TwitterService()
         {
-            //_Counter.Decrement(ref _Counter.TwitterService);
             Dispose();
         }
 
@@ -240,6 +236,12 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             private set;
         }
 
+        public TwitterIdentity TWIdentity
+        {
+            get;
+            private set;
+        }
+
         /// <summary>
         /// 認証情報を問い合わせます。
         /// </summary>
@@ -248,12 +250,40 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <exception cref="TwitterServiceException"></exception>
         public User VerifyCredential()
         {
-            return ExecuteRequest<User>(() =>
+            /*return ExecuteRequest<User>(() =>
             {
                 String responseBody = GET("/account/verify_credentials.json");
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
-            });
+            });*/
+            Console.WriteLine("VerifyCredential");
+            var endpoint = new MessageReceivingEndpoint("https://api.twitter.com/1.1/account/verify_credentials.json", HttpDeliveryMethods.GetRequest | HttpDeliveryMethods.AuthorizationHeaderRequest);
+            try
+            {
+                var request = OAuthClient.Request(endpoint, TWIdentity.Token);
+                var response = request.GetResponse();
+                using (StreamReader sr = new StreamReader(GetResponseStream(response)))
+                {
+                    Console.WriteLine(sr.ReadToEnd());
+                    return JsonConvert.DeserializeObject<User>(sr.ReadToEnd());
+                }
+            }
+            catch (System.Collections.Generic.KeyNotFoundException e)
+            {
+                Console.WriteLine("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.Source);
+                Console.WriteLine("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+                throw e;
+            }
+            catch (DotNetOpenAuth.Messaging.ProtocolException e)
+            {
+                Console.WriteLine("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.Source);
+                Console.WriteLine("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+                throw e;
+            }
         }
 
         /// <summary>
@@ -276,8 +306,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             String encodedMessage = TwitterService.EncodeMessage(message);
             return ExecuteRequest<Tweet>(() =>
             {
-                String postData = String.Format("status={0}{1}", encodedMessage, (inReplyToStatusId != 0 ? "&in_reply_to_status_id=" + inReplyToStatusId : ""));
-                String responseBody = POST("/statuses/update.json", postData);
+                IDictionary<string, string> parts = new Dictionary<string,string>();
+                parts["status"] = encodedMessage;
+                if (inReplyToStatusId != 0) parts["in_reply_to_status_id"] = inReplyToStatusId.ToString();
+                String responseBody = POST("/statuses/update.json", parts);
                 Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
                 return tweet;
             });
@@ -292,8 +324,10 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             String encodedMessage = TwitterService.EncodeMessage(message);
             return ExecuteRequest<DirectMessage>(() =>
             {
-                String postData = String.Format("user={0}&text={1}", GetUserId(screenName), encodedMessage);
-                String responseBody = POST("/direct_messages/new.json", postData);
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["user"] = GetUserId(screenName);
+                parts["text"] = encodedMessage;
+                String responseBody = POST("/direct_messages/new.json", parts);
                 DirectMessage directMessage = JsonConvert.DeserializeObject<DirectMessage>(responseBody);
                 return directMessage;
             });
@@ -563,7 +597,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Tweet>(() =>
             {
-                String responseBody = POST(String.Format("/favorites/create.json?id={0}", id), "");
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["id"] = id.ToString();
+                String responseBody = POST("/favorites/create.json", parts);
                 Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
                 return tweet;
             });
@@ -578,7 +614,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Tweet>(() =>
             {
-                String responseBody = POST(String.Format("/favorites/destroy.json?id={0}", id), "");
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["id"] = id.ToString();
+                String responseBody = POST("/favorites/destroy.json", parts);
                 Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
                 return tweet;
             });
@@ -591,7 +629,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Tweet>(() =>
             {
-                String responseBody = POST(String.Format("/statuses/destroy/{0}.json", id), "");
+                String responseBody = POST(String.Format("/statuses/destroy/{0}.json", id));
                 Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
                 return tweet;
             });
@@ -604,7 +642,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<Tweet>(() =>
             {
-                String responseBody = POST(String.Format("/statuses/retweet/{0}.json", id), "");
+                String responseBody = POST(String.Format("/statuses/retweet/{0}.json", id));
                 Tweet tweet = JsonConvert.DeserializeObject<Tweet>(responseBody);
                 return tweet;
             });
@@ -619,8 +657,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/friendships/create.json", postData);
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["screen_name"] = screenName;
+                String responseBody = POST("/friendships/create.json", parts);
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -635,8 +674,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/friendships/destroy.json", postData);
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["screen_name"] = screenName;
+                String responseBody = POST("/friendships/destroy.json", parts);
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -649,8 +689,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/blocks/create.json", postData);
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["screen_name"] = screenName;
+                String responseBody = POST("/blocks/create.json", parts);
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -663,8 +704,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/blocks/destroy.json", postData);
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["screen_name"] = screenName;
+                String responseBody = POST("/blocks/destroy.json", parts);
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -677,8 +719,9 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         {
             return ExecuteRequest<User>(() =>
             {
-                String postData = String.Format("screen_name={0}", screenName);
-                String responseBody = POST("/users/report_spam.json", postData);
+                IDictionary<string, string> parts = new Dictionary<string, string>();
+                parts["screen_name"] = screenName;
+                String responseBody = POST("/users/report_spam.json", parts);
                 User user = JsonConvert.DeserializeObject<User>(responseBody);
                 return user;
             });
@@ -1121,7 +1164,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
             }
 
             GC.SuppressFinalize(this);
-            _Counter.Decrement(ref _Counter.TwitterService);
         }
 
         #endregion
@@ -1154,32 +1196,59 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         /// <summary>
         /// 指定されたURLからデータを取得し文字列として返します。
         /// </summary>
-        /// <param name="url">データを取得するURL</param>
         /// <returns></returns>
-        public String GET(String url)
+        public String GET(string endpoint)
         {
-            TraceLogger.Twitter.Information("GET: " + url);
-            return GETWithOAuth(url);
+            TraceLogger.Twitter.Information("GET: " + endpoint);
+            return Request(endpoint, HttpDeliveryMethods.GetRequest);
         }
 
-        public String POST(String url, String postData)
+        public String POST(string endpoint)
         {
-            TraceLogger.Twitter.Information("POST: " + url + " " + postData);
-            return OAuthClient.Request(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.POST, postData);
+            TraceLogger.Twitter.Information("POST: " + endpoint);
+            return Request(endpoint, HttpDeliveryMethods.PostRequest);
         }
 
-        #region OAuth 認証アクセス
-        private String GETWithOAuth(String url)
+        public String POST(string endpoint, IDictionary<string, string> parts)
         {
-            HttpWebRequest webRequest = OAuthClient.CreateRequest(new Uri(ServiceServerPrefix + url), TwitterOAuth.HttpMethod.GET);
-            if (EnableCompression)
-                webRequest.Headers["Accept-Encoding"] = "gzip";
+            TraceLogger.Twitter.Information("POST: " + endpoint);
+            return Request(endpoint, parts, HttpDeliveryMethods.PostRequest);
+        }
 
-            HttpWebResponse webResponse = webRequest.GetResponse() as HttpWebResponse;
-            using (StreamReader sr = new StreamReader(GetResponseStream(webResponse)))
+        public String Request(string endpoint, HttpDeliveryMethods method)
+        {
+            return Request(endpoint, null, method);
+        }
+
+        public String Request(string endpoint, IDictionary<string, string> parts, HttpDeliveryMethods method)
+        {
+            Uri url = new Uri("https://api.twitter.com/1.1" + endpoint);
+            HttpWebRequest request;
+            var _endpoint = new MessageReceivingEndpoint(url, method | HttpDeliveryMethods.AuthorizationHeaderRequest);
+            if (parts != null)
+            {
+                request = OAuthClient.Request(
+                    _endpoint,
+                    TWIdentity.Token,
+                    parts
+                );
+            }
+            else
+            {
+                Console.WriteLine(TWIdentity.Token);
+                Console.WriteLine(OAuthClient);
+                request = OAuthClient.Request(
+                    _endpoint,
+                    TWIdentity.Token
+                );
+            }
+            if (EnableCompression) request.Headers["Accept-Encoding"] = "gzip";
+            HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+            using (StreamReader sr = new StreamReader(GetResponseStream(response)))
+            {
                 return sr.ReadToEnd();
+            }
         }
-        #endregion
 
         private Stream GetResponseStream(WebResponse webResponse)
         {
@@ -1359,15 +1428,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public string WithheldInCountries { get; set; }
         [JsonProperty("withheld_scope", NullValueHandling = NullValueHandling.Ignore)]
         public string WithheldScope { get; set; }
-
-        public User()
-        {
-            _Counter.Increment(ref _Counter.User);
-        }
-        ~User()
-        {
-            _Counter.Decrement(ref _Counter.User);
-        }
     }
 
     /// <summary>
@@ -1484,28 +1544,11 @@ namespace Misuzilla.Applications.TwitterIrcGateway
         public string WithheldScope { get; set; }
         [JsonProperty("retweeted_status", NullValueHandling = NullValueHandling.Ignore)]
         public Tweet RetweetedStatus { get; set; }
-
-        public Tweet()
-        {
-            _Counter.Increment(ref _Counter.Status);
-        }
-        ~Tweet()
-        {
-        _Counter.Decrement(ref _Counter.Status);
-        }
     }
 
     public class Tweets
     {
         public Tweet[] Tweet;
-        public Tweets()
-        {
-            _Counter.Increment(ref _Counter.Statuses);
-        }
-        ~Tweets()
-        {
-        _Counter.Decrement(ref _Counter.Statuses);
-        }
     }
 
     /// <summary>
@@ -1729,14 +1772,5 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     public class DirectMessages
     {
         public DirectMessage[] DirectMessage;
-
-        public DirectMessages()
-        {
-            _Counter.Increment(ref _Counter.DirectMessages);
-        }
-        ~DirectMessages()
-        {
-            _Counter.Decrement(ref _Counter.DirectMessages);
-        }
     }
 }

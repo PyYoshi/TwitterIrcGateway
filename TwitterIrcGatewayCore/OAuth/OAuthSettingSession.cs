@@ -14,7 +14,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway
     {
         private Server _server;
         private TwitterOAuth _twitterOAuth;
-        private String authToken;
         private TwitterIdentity _identity;
         private Boolean _isFinished;
 
@@ -27,7 +26,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
 
         protected override void OnAttached(ConnectionBase connection)
         {
-            String authoizeUrl = _twitterOAuth.GetAuthorizeUrl(out authToken);
+            String authoizeUrl = _twitterOAuth.GetAuthorizeUrl();
             SendMessage("次のURLをブラウザで表示してアプリケーションのアクセスを許可してください。また、許可のあと表示される暗証番号(PINコード)を入力してください。");
             SendMessage(authoizeUrl);
         }
@@ -48,7 +47,7 @@ namespace Misuzilla.Applications.TwitterIrcGateway
                     // step 1
                     try
                     {
-                        _identity = _twitterOAuth.RequestAccessToken(authToken, privMsg.Content.Trim());
+                        _identity = _twitterOAuth.RequestAccessToken(privMsg.Content.Trim());
                     }
                     catch (WebException we)
                     {

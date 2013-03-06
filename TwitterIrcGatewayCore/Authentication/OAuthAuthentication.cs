@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using Misuzilla.Net.Irc;
+using DotNetOpenAuth.OAuth.ChannelElements;
 
 namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
 {
@@ -29,12 +30,6 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
             {
                 var config = Config.LoadConfig(userInfo.UserName); // HOSTING => 番号的 ID になる
 
-                // xAuth fallback
-                if (true && String.IsNullOrEmpty(config.OAuthUserPasswordHash))
-                {
-                    return new XAuthAuthentication().Authenticate(server, connection, userInfo);
-                }
-
                 connection.SendGatewayServerMessage("* アカウント認証を確認しています(OAuth)...");
                 // OAuth 設定未設定
                 if (String.IsNullOrEmpty(config.OAuthAccessToken) || String.IsNullOrEmpty(config.OAuthTokenSecret))
@@ -53,26 +48,26 @@ namespace Misuzilla.Applications.TwitterIrcGateway.Authentication
                 // ユーザー認証問い合わせをしてみる
                 try
                 {
-                    TwitterOAuth twitterOAuth = new TwitterOAuth(server.OAuthClientKey, server.OAuthSecretKey)
-                    {
-                        Token = config.OAuthAccessToken,
-                        TokenSecret = config.OAuthTokenSecret
-                    };
+                    TwitterOAuth twitterOAuth = new TwitterOAuth(server.OAuthClientKey, server.OAuthSecretKey);
                     TwitterIdentity identity = new TwitterIdentity
                                                    {
                                                        Token = config.OAuthAccessToken,
                                                        TokenSecret = config.OAuthTokenSecret
                                                    };
                     TwitterService twitterService = new TwitterService(server.OAuthClientKey, server.OAuthSecretKey, identity);
+                    Console.WriteLine("twitterService.VerifyCredential() Start");
                     User twitterUser = twitterService.VerifyCredential();
+                    Console.WriteLine("twitterService.VerifyCredential() End");
                     identity.ScreenName = twitterUser.ScreenName;
                     identity.UserId = twitterUser.Id;
+                    Console.WriteLine(identity);
                     connection.SendGatewayServerMessage(String.Format("* アカウント: {0} (ID:{1})", twitterUser.ScreenName, twitterUser.Id));
 
                     return new TwitterAuthenticateResult(twitterUser, identity);
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex.Message);
                     connection.SendServerErrorMessage(TwitterOAuth.GetMessageFromException(ex));
                     return new AuthenticateResult(ErrorReply.ERR_PASSWDMISMATCH, "Password Incorrect");
                 }
